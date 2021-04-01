@@ -1,5 +1,8 @@
 Author = "Aron Judd P. Mendiola"
 
+# Raw text files can be found in the cluster directory path below
+# "/share/lasallelab/Aron/RNA_seq_analysis/Analysis_March252021/GeneCounts/ReverseCounts"
+
 # setwd = set working directory; equivalent to the Linux "cd".
 # the R equivalent to the Linux pwd is getwd() = get working directory.
 setwd("/Users/aron/Desktop/LaSalle Lab/Analysis/Deseq2/ReverseCounts")
