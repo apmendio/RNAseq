@@ -1,10 +1,4 @@
-Author = "Aron Mediola"
-# Download annotation for all chromosomes
-wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_29/gencode.v29.annotation.gtf.gz
-
-# first column is the transcript ID, second column is the gene ID, third column is the gene symbol
-zcat gencode.v29.annotation.gtf.gz | awk -F "\t" 'BEGIN{OFS="\t"}{if($3=="transcript"){split($9, a, "\""); print a[4],a[2],a[8]}}' > tx2gene.gencode.v29.csv
-
+Author = "Aron Judd P. Mendiola"
 
 # setwd = set working directory; equivalent to the Linux "cd".
 # the R equivalent to the Linux pwd is getwd() = get working directory.
