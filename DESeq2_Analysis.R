@@ -37,6 +37,10 @@ for( i in seq_along(files) ){
   counts <- cbind(counts, x[,2])
 }
 
+# subsetting data for male and female samples
+
+males <- subset(se_star_matrix2$S)
+
 # set the row names
 rownames(counts) <- x[,1]
 # set the column names based on input file names, with pattern removed
@@ -88,12 +92,56 @@ norm_counts_symbols <- merge(unique(tx2gene[,2:3]), data.frame(ID=rownames(norm_
 norm_counts_symbols2 <- merge((tx2gene[,2:3]), data.frame(ID=rownames(norm_counts), norm_counts), by=1, all=T, verbose=T)
 
 # write normalized counts to text file
-write.table(norm_counts_symbols, "normalized_counts.txt", quote=F, col.names=T, row.names=F, sep="\t")
+write.table(norm_counts_symbols, "normalized_counts.txt", quote=F, col.names=T, row.names=T, sep="\t")
 
 # Try with the vst transformation
 vsd <- vst(se_star_matrix2)
 
+# load libraries pheatmap to create the heatmap plot
+library(pheatmap)
 
+# calculate between-sample distance matrix
+sampleDistMatrix <- as.matrix(dist(t(assay(vsd))))
 
+# create figure in PNG format
+png("sample_distance_heatmap_star.png")
+pheatmap(sampleDistMatrix)
+# close PNG file after writing figure in it
+dev.off() 
 
+png("PCA_star.png")
+plotPCA(object = vsd,
+        intgroup = "Timepoint")
+dev.off()
+
+# check results names: depends on what was modeled. Here it was the "Timepoint"
+resultsNames(se_star_matrix2)
+
+# extract results for t25 vs t0
+# contrast: the column from the metadata that is used for the grouping of the samples (Time), then the baseline (t0) and the group compared to the baseline (t25) -> results will be as "t25 vs t0"
+de <- results(object = se_star_matrix2, 
+              name="Timepoint_ZT6_vs_ZT0")
+
+# processing the same results as above but including the log2FoldChange shrinkage
+# useful for visualization and gene ranking
+de_shrink <- lfcShrink(dds = se_star_matrix2,
+                       coef="Timepoint_ZT6_vs_ZT0",
+                       type="apeglm")
+
+# check first rows of both results
+head(de)
+head(de_shrink)
+
+# write normalized counts to text file
+write.table(de_shrink, "ZT6_vs_ZT0.txt", quote=T, col.names=T, row.names=T, sep="\t")
+
+# column 4 is the log2FoldChange, column 7 is the adjusted p-value (padj)
+# keep all columns
+awk '($7 < 0.05 && $4 > 0.5) || ($7 < 0.05 && $4 < -0.5) {print}' ZT6_vs_ZT0.txt > ZT6_vs_ZT0_padj0.05_log2fc0.5.txt
+
+# extract only gene IDs (column 1)
+cut -f1 ZT6_vs_ZT0_padj0.05_log2fc0.5.txt > ZT6_vs_ZT0_padj0.05_log2fc0.5_IDs.txt
+
+# extract only gene symbols (column 2)
+cut -f2 ZT6_vs_ZT0_padj0.05_log2fc0.5.txt > ZT6_vs_ZT0_padj0.05_log2fc0.5_symbols.txt
 
