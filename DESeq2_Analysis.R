@@ -176,23 +176,35 @@ female_star_matrix2 <- DESeq(female_star_matrix_filtered)
 # normalized = TRUE: divide the counts by the size factors calculated by the DESeq function
 norm_counts <- log2(counts(se_star_matrix2, normalized = TRUE)+1)
 
+# normalize DESeq counts of male and female samples
+norm_mcounts <- log2(mcounts(male_star_matrix2, normalized = TRUE)+1)
+
+norm_fcounts <- log2(fcounts(female_star_matrix2, normalized = TRUE)+1)
+
 # Load the tximport package that we use to import Salmon counts
 library(tximport)
 
 # Read in the two-column data.frame linking transcript id (column 1) to gene id (column 2)
-tx2gene <- read.table("ensembl_mm_100.tsv", 
+ensid <- read.table("ensembl_mm_100.tsv", 
                       sep="\t",
                       header=F)
 
 # add the gene symbols
 norm_counts_symbols <- merge(unique(tx2gene[,1:3]), data.frame(ID=rownames(norm_counts), norm_counts), by=1, all=F, verbose=T)
 
-norm_counts_symbols2 <- merge((tx2gene[,1:3]), data.frame(ID=rownames(norm_counts), norm_counts), by=1, all=T, verbose=T)
+# add the gene symbols to male and female samples
+norm_mcounts_symbols <- merge(unique(ensid[,1:3]), data.frame(ID=rownames(norm_mcounts), norm_mcounts), by=1, all=F, verbose=T)
+
+norm_fcounts_symbols <- merge(unique(ensid[,1:3]), data.frame(ID=rownames(norm_fcounts), norm_fcounts), by=1, all=F, verbose=T)
 
 # write normalized counts to text file
-write.table(norm_counts_symbols, "normalized_counts.txt", quote=F, col.names=T, row.names=F, sep="\t")
+write.table(norm_mcounts_symbols, "normalized_mcounts.txt", quote=F, col.names=T, row.names=F, sep="\t")
 
-write.table(norm_counts_symbols2, "normalized_counts2.txt", quote=F, col.names=T, row.names=F, sep="\t")
+write.table(norm_fcounts_symbols, "normalized_fcounts.txt", quote=F, col.names=T, row.names=F, sep="\t")
+
+
+# write normalized counts to text file of male and female samples
+write.table(norm_mc)
 # Try with the vst transformation
 vsd <- vst(se_star_matrix2)
 
