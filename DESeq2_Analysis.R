@@ -73,7 +73,7 @@ ffiles <- dir(pattern="counts.txt")
 
 fcounts <- c()
 for( i in seq_along(ffiles) ){
-  x <- read.table(file=files[i], sep="\t", header=F, as.is=T)
+  x <- read.table(file=ffiles[i], sep="\t", header=F, as.is=T)
   fcounts <- cbind(fcounts, x[,2])
 }
 
@@ -146,9 +146,9 @@ se_star_matrix_update <- se_star_matrix_update[rowSums(counts(se_star_matrix_upd
 
 # Filter male and female samples
 
-male_star_matrix_filtered <- male_star_matrix[rowSums(mcount(male_star_matrix)) > 10, ]
+male_star_matrix_filtered <- male_star_matrix[rowSums(counts(male_star_matrix)) > 10, ]
 
-female_star_matrix_filtered <- female_star_matrix[rowSums(mcount(female_star_matrix)) > 10, ]
+female_star_matrix_filtered <- female_star_matrix[rowSums(counts(female_star_matrix)) > 10, ]
 
 # Number of genes left after low-count filtering:
 nrow(se_star_matrix)
@@ -172,15 +172,17 @@ male_star_matrix2 <- DESeq(male_star_matrix_filtered)
 
 female_star_matrix2 <- DESeq(female_star_matrix_filtered)
 
+resultsNames(male_star_matrix2)
 
+resultsNames(female_star_matrix2)
 # compute normalized counts (log2 transformed); + 1 is a count added to avoid errors during the log2 transformation: log2(0) gives an infinite number, but log2(1) is 0.
 # normalized = TRUE: divide the counts by the size factors calculated by the DESeq function
 norm_counts <- log2(counts(se_star_matrix2, normalized = TRUE)+1)
 
 # normalize DESeq counts of male and female samples
-norm_mcounts <- log2(mcounts(male_star_matrix2, normalized = TRUE)+1)
+norm_mcounts <- log2(counts(male_star_matrix2, normalized = TRUE)+1)
 
-norm_fcounts <- log2(fcounts(female_star_matrix2, normalized = TRUE)+1)
+norm_fcounts <- log2(counts(female_star_matrix2, normalized = TRUE)+1)
 
 resultsNames(norm_mcounts)
 
@@ -216,9 +218,28 @@ vsd2 <- vst(se_star_matrix_update)
 
 # Try with the vst transformation male and female samples
 
-vsdm <-vst(male_star_matrix2)
+vsdm <- vst(male_star_matrix2)
+mmat <- assay(vsdm)
+mmat <- limma::removeBatchEffect(mmat, vsdm$batch)
+assay(vsdm) <- mmat
+png("PCA_norm_male.png")
+plotPCA(object = vsdm,
+        intgroup = "Timepoint")
+dev.off()
+
+# also possible to perform custom transformation:
+dds <- estimateSizeFactors(male_star_matrix2)
+# shifted log of normalized counts
+se <- SummarizedExperiment(log2(counts(dds, normalized=TRUE) + 1),
+                           colData=colData(dds))
+# the call to DESeqTransform() is needed to
+# trigger our plotPCA method.
+png("PCA_norm_male2.png")
+plotPCA( DESeqTransform( se ), intgroup = "Timepoint" )
+dev.off()
 
 vsdf <-vst(female_star_matrix2)
+
 
 # load libraries pheatmap to create the heatmap plot
 library(pheatmap)
@@ -227,11 +248,26 @@ library(pheatmap)
 sampleDistMatrix <- as.matrix(dist(t(assay(vsd))))
 
 sampleDistMatrix2 <- as.matrix(dist(t(assay(vsd2))))
+
+# calculate sample distance matrix between samples
+msampleDisMatrix <- as.matrix(dist(t(assay(vsdm))))
+
 # create figure in PNG format
 png("sample_distance_heatmap_star3.png")
 pheatmap(sampleDistMatrix2)
+dev.off() 
+# create figure in PNG format for male and female samples
+png("male_counts_heatmap.png")
+pheatmap(msampleDisMatrix)
+dev.off() 
+
+png("female_counts_heatmap.png")
+pheatmap(msampleDisMatrix)
+dev.off() 
 # close PNG file after writing figure in it
 dev.off() 
+
+# create PCA plot
 
 png("PCA_star7.png")
 plotPCA(object = vsd,
@@ -248,6 +284,18 @@ plotPCA(object = vsd2,
         intgroup = "Timepoint")
 dev.off()
 
+# create PCA plot for male and female samples
+
+png("PCA_male_Timepointdist.png")
+plotPCA(object = vsdm,
+        intgroup = "Timepoint")
+dev.off()
+
+png("PCA_female_Timepointdist.png")
+plotPCA(object = vsdf,
+        intgroup = "Timepoint")
+dev.off()
+
 # check results names: depends on what was modeled. Here it was the "Timepoint"
 resultsNames(se_star_matrix2)
 
@@ -256,16 +304,50 @@ resultsNames(se_star_matrix2)
 de <- results(object = se_star_matrix2, 
               name="Timepoint_ZT6_vs_ZT0")
 
+ZT0_vs_ZT6de <- results(object = male_star_matrix2, 
+              name="Timepoint_ZT6_vs_ZT0")
+
+ZT0_vs_ZT3de <- results(object = male_star_matrix2, 
+              name="Timepoint_ZT3_vs_ZT0")
+
+ZT0_vs_ZT12de <- results(object = male_star_matrix2, 
+              name="Timepoint_ZT12_vs_ZT0")
+
+
 # processing the same results as above but including the log2FoldChange shrinkage
 # useful for visualization and gene ranking
 de_shrink <- lfcShrink(dds = se_star_matrix2,
                        coef="Timepoint_ZT6_vs_ZT0",
                        type="apeglm")
 
+ZT0_vs_ZT6de_shrink <- lfcShrink(dds = se_star_matrix2,
+                                 coef="Timepoint_ZT6_vs_ZT0",
+                                 type="apeglm")
+
+ZT0_vs_ZT3de_shrink <- lfcShrink(dds = se_star_matrix2,
+                                 coef="Timepoint_ZT3_vs_ZT0",
+                                 type="apeglm")
+
+ZT0_vs_ZT12de_shrink <- lfcShrink(dds = se_star_matrix2,
+                                  coef="Timepoint_ZT12_vs_ZT0",
+                                  type="apeglm")
+
 # check first rows of both results
 head(de)
 head(de_shrink)
 
+head(ZT0_vs_ZT6de)
+head(ZT0_vs_ZT6de_shrink)
+head(ZT0_vs_ZT3de)
+head(ZT0_vs_ZT3de_shrink)
+head(ZT0_vs_ZT12de)
+head(ZT0_vs_ZT12de_shrink)
+
+# add the gene symbols to male and female samples
+norm_trial_ZT0vZT6 <- merge(unique(ensid[,1:3]), data.frame(ID=rownames(ZT0_vs_ZT6de_shrink), ZT0_vs_ZT6de_shrink), by=1, all=F, verbose=T)
+
+norm_fcounts_symbols <- merge(unique(ensid[,1:3]), data.frame(ID=rownames(norm_fcounts), norm_fcounts), by=1, all=F, verbose=T)
+
 # write normalized counts to text file
-write.table(de_shrink, "ZT6_vs_ZT0.txt", quote=T, col.names=T, row.names=T, sep="\t")
+write.table(norm_trial_ZT0vZT6, "Zt0vsZt6", quote=T, col.names=T, row.names=T, sep="\t")
 
