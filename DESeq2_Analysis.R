@@ -172,6 +172,7 @@ male_star_matrix2 <- DESeq(male_star_matrix_filtered)
 
 female_star_matrix2 <- DESeq(female_star_matrix_filtered)
 
+
 # compute normalized counts (log2 transformed); + 1 is a count added to avoid errors during the log2 transformation: log2(0) gives an infinite number, but log2(1) is 0.
 # normalized = TRUE: divide the counts by the size factors calculated by the DESeq function
 norm_counts <- log2(counts(se_star_matrix2, normalized = TRUE)+1)
@@ -180,6 +181,10 @@ norm_counts <- log2(counts(se_star_matrix2, normalized = TRUE)+1)
 norm_mcounts <- log2(mcounts(male_star_matrix2, normalized = TRUE)+1)
 
 norm_fcounts <- log2(fcounts(female_star_matrix2, normalized = TRUE)+1)
+
+resultsNames(norm_mcounts)
+
+resultsNames(norm_fcounts)
 
 # Load the tximport package that we use to import Salmon counts
 library(tximport)
@@ -202,15 +207,18 @@ write.table(norm_mcounts_symbols, "normalized_mcounts.txt", quote=F, col.names=T
 
 write.table(norm_fcounts_symbols, "normalized_fcounts.txt", quote=F, col.names=T, row.names=F, sep="\t")
 
-
-# write normalized counts to text file of male and female samples
-write.table(norm_mc)
 # Try with the vst transformation
 vsd <- vst(se_star_matrix2)
 
 vsd <- vst(pe_star_matrix2)
 
 vsd2 <- vst(se_star_matrix_update)
+
+# Try with the vst transformation male and female samples
+
+vsdm <-vst(male_star_matrix2)
+
+vsdf <-vst(female_star_matrix2)
 
 # load libraries pheatmap to create the heatmap plot
 library(pheatmap)
