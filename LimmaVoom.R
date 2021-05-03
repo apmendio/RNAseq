@@ -3,7 +3,9 @@ library(Glimma)
 library(edgeR)
 library(Mus.musculus)
 
+BiocManager::install("limma")
 BiocManager::install("Glimma")
+BiocManager::install("edgeR")
 BiocManager::install("Mus.musculus")
 
 setwd("/Users/aron/Desktop/LaSalle Lab/Analysis/Limma/ReverseCounts")
@@ -85,6 +87,13 @@ plotMDS(d, col = as.numeric(metadata$group), cex=1)
 logcpm <- cpm(d, prior.count=2, log=TRUE)
 write.table(logcpm,"counts_normalized.txt",sep="\t",quote=F)
 
+#Transpose counts for WGCNA and Circadian Analysis
+input_mat = t(logcpm)
+dim(input_mat)
+organized_colnames <- read.table("organized_samples2.txt", header=F, sep="\t")  #formatting sampkes to keep table organized according to replciates
+allcol_order <- as.data.frame(organized_colnames[,1])
+row_order <- as.data.frame(allcol_order[,1])
+input_mat <- input_mat[allcol_order[,1],]
 #Voom transformation and calculation of variance weights
 group <- metadata$group
 sex <- metadata$Sex
@@ -113,6 +122,7 @@ head(top.table, 50)
 
 #Annotation and adding in cpms 
 top.table$Gene <- rownames(top.table)
+table(top.table$Gene)
 top.table <- top.table[,c("Gene", names(top.table)[1:6])]
 top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID),],logcpm[match(top.table$Gene,rownames(logcpm)),])
 
@@ -206,3 +216,41 @@ top.table <- top.table[,c("Gene", names(top.table)[1:6])]
 top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID),],logcpm[match(top.table$Gene,rownames(logcpm)),])
 head(top.table)
 write.table(top.table, file = "ZT0_v_ZT21_Male.txt", row.names = F, sep = "\t", quote = F)
+
+#ZT6 comparisons with all timepoints
+
+contr <- makeContrasts(groupMale.ZT6 - groupMale.ZT12, levels = colnames(coef(fit)))
+tmp <- contrasts.fit(fit, contr)
+tmp <- eBayes(tmp)
+top.table <- topTable(tmp, adjust.method = "BH", sort.by = "P", n = Inf)
+length(which(top.table$adj.P.Val < 0.05))
+head(top.table, 20)
+top.table$Gene <- rownames(top.table)
+top.table <- top.table[,c("Gene", names(top.table)[1:6])]
+top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID),],logcpm[match(top.table$Gene,rownames(logcpm)),])
+head(top.table)
+write.table(top.table, file = "ZT6_v_ZT12_Male.txt", row.names = F, sep = "\t", quote = F)
+
+contr <- makeContrasts(groupMale.ZT6 - groupMale.ZT15, levels = colnames(coef(fit)))
+tmp <- contrasts.fit(fit, contr)
+tmp <- eBayes(tmp)
+top.table <- topTable(tmp, adjust.method = "BH", sort.by = "P", n = Inf)
+length(which(top.table$adj.P.Val < 0.05))
+head(top.table, 20)
+top.table$Gene <- rownames(top.table)
+top.table <- top.table[,c("Gene", names(top.table)[1:6])]
+top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID),],logcpm[match(top.table$Gene,rownames(logcpm)),])
+head(top.table)
+write.table(top.table, file = "ZT6_v_ZT15_Male.txt", row.names = F, sep = "\t", quote = F)
+
+contr <- makeContrasts(groupMale.ZT6 - groupMale.ZT21, levels = colnames(coef(fit)))
+tmp <- contrasts.fit(fit, contr)
+tmp <- eBayes(tmp)
+top.table <- topTable(tmp, adjust.method = "BH", sort.by = "P", n = Inf)
+length(which(top.table$adj.P.Val < 0.05))
+head(top.table, 20)
+top.table$Gene <- rownames(top.table)
+top.table <- top.table[,c("Gene", names(top.table)[1:6])]
+top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID),],logcpm[match(top.table$Gene,rownames(logcpm)),])
+head(top.table)
+write.table(top.table, file = "ZT6_v_ZT21_Male.txt", row.names = F, sep = "\t", quote = F)
