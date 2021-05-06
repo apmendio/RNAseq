@@ -83,7 +83,7 @@ plotDendroAndColors(
   guideHang = 0.05 )
 
 # INSERT CODE FOR EVALUATING INDIVIDUAL MODULES
-colnames(datExpr)[net$colors == "blue"] # what is in the blue module?
+colnames(input_mat)[net$colors == "blue"] # what is in the blue module?
 
 # netwk$colors[netwk$blockGenes[[1]]]
 # table(netwk$colors)
