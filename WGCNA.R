@@ -8,7 +8,7 @@ powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
 
 # Call the network topology analysis function
 sft = pickSoftThreshold(
-  input_mat,             # <= Input data
+  input_mat_male,             # <= Input data
   blockSize = 30,
   powerVector = powers,
   verbose = 5
@@ -82,8 +82,19 @@ plotDendroAndColors(
   addGuide = TRUE,
   guideHang = 0.05 )
 
+table(module_df$colors) 
 # INSERT CODE FOR EVALUATING INDIVIDUAL MODULES
-colnames(input_mat)[netwk$colors == "blue"] # what is in the blue module?
+colnames(netwk)[labels2colors == "blue"]
+table(module_df$colors = "white", (module_df$gene_id)) # what is in the blue module?
+table(module_df$colors) 
+
+head(module_df)
+BiocManager::install("lessR")
+library("lessR")
+module_df[.(colors=="grey"), .(gene_id)]
+grey <- as.data.frame(module_df[.(colors=="grey"), .(gene_id)])
+module_df["colors"]
+dim(grey)
 
 # netwk$colors[netwk$blockGenes[[1]]]
 # table(netwk$colors)
@@ -93,9 +104,10 @@ module_df <- data.frame(
   colors = labels2colors(netwk$colors)
 )
 
+names(netwk$MEs)
 module_df[1:5,]
 
-write.table(module_df, "gene_modules.txt", sep = "\t")
+write.table(module_df, "female_gene_modules.txt", sep = "\t")
 
 # Get Module Eigengenes per cluster
 MEs0 <- moduleEigengenes(input_mat, mergedColors)$eigengenes
@@ -165,7 +177,7 @@ submod_df %>% ggplot(., aes(x=name, y=value, group=gene_id)) +
 genes_of_interest = module_df %>%
   subset(colors %in% modules_of_interest)
 
-expr_of_interest = expr_normalized[genes_of_interest$gene_id,]
+expr_of_interest = logcpm[genes_of_interest$gene_id,]
 expr_of_interest[1:5,1:5]
 
 # Only recalculate TOM for modules of interest (faster, altho there's some online discussion if this will be slightly off)
@@ -193,5 +205,5 @@ head(edge_list)
 
 # Export Network file to be read into Cytoscape, VisANT, etc
 write_delim(edge_list,
-            file = "edgelist.tsv",
+            file = "female_edgelist.tsv",
             delim = "\t")
