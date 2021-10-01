@@ -2,14 +2,6 @@
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/WGCNAoptimization")
 sapply(c("tidyverse", "oligo", "sva","pd.hugene.2.0.st", "matrixStats", "biomaRt", "WGCNA", "VennDiagram"), require, character.only = TRUE)
 
-library(tidyverse)
-library(oligo)
-library(sva)
-library(pd.hugene.2.0.st)
-library(matrixStats)
-library(biomaRt)
-library(WGCNA)
-library(VennDiagram)
 BiocManager::install("tidyverse")
 BiocManager::install("oligo")
 BiocManager::install("sva")
@@ -20,25 +12,37 @@ BiocManager::install("WGCNA")
 BiocManager::install("VennDiagram")
 BiocManager::install("magrittr") # package installations are only needed the first time you use it
 BiocManager::install("dplyr")    # alternative installation of the %>%
+BiocManager::install("ggplot2")
+
+library(tidyverse)
+library(oligo)
+library(sva)
+library(pd.hugene.2.0.st)
+library(matrixStats)
+library(biomaRt)
+library(WGCNA)
+library(VennDiagram)
 library(magrittr) # needs to be run every time you start R and want to use %>%
 library(dplyr)    # alternatively, this also loads %>%
-BiocManager::install("ggplot2")
 library(ggplot2)
+
 # Data ####
 options(stringsAsFactors = FALSE)
 Sys.setenv(R_THREADS = 1)
 enableWGCNAThreads()
 allowWGCNAThreads()
+
+# Read in normalized counts #
+
 exp_femdata <- read.csv("fcountsnu2.csv")
 exp_maledata <- read.csv("mcountsnu2.csv")
-#exp_femdata <- read.csv("fCounts2.csv")
-#exp_maledata <- read.csv("mCounts.csv")
-#exp_femdata <- t(exp_femdata)
-#exp_maledata <- t(exp_maledata)
-#write.csv(exp_femdata, file = "fcountsnu2.csv", append = TRUE, quote = FALSE, sep = "\t")
-#write.csv(exp_maledata, file = "mcountsnu2.csv", append = TRUE, quote = FALSE, sep = "\t")
+
+# Check directories #
 
 getwd()
+
+# Format normalized counts for WGCNA (input requires transposing) #
+
 head(exp_femdata[,-c(1)])
 exp <- list(femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)]))),
             maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)]))))
@@ -48,6 +52,8 @@ names(exp$maledata$data) = exp_maledata$Gene_ID
 rownames(exp$maledata$data) = names(exp_maledata)[-c(1)]
 checkSets(exp)
 
+# Run WGCNA analysis #
+
 consensusMods <- blockwiseConsensusModules(exp, checkMissingData = FALSE, maxBlockSize = 50000, corType = "bicor",
                                            maxPOutliers = 0.1, power = 8, networkType = "signed", 
                                            checkPower = FALSE, TOMType = "signed", 
@@ -55,7 +61,9 @@ consensusMods <- blockwiseConsensusModules(exp, checkMissingData = FALSE, maxBlo
                                            deepSplit = 4, mergeCutHeight = 0.1, verbose = 5)
 table(consensusMods$colors) %>% sort(decreasing = TRUE)
 table(consensusMods$colors)
-# Plot Merged Gene Dendrogram with Modules
+
+# Plot Merged Gene Dendrogram with Modules make sure to rename files #
+
 pdf("wgcnatrialnu2.pdf", width = 10, height = 5)
 sizeGrWindow(10, 5)
 plotDendroAndColors(dendro = consensusMods$dendrograms[[1]], colors = consensusMods$colors, 
@@ -63,7 +71,7 @@ plotDendroAndColors(dendro = consensusMods$dendrograms[[1]], colors = consensusM
                     guideHang = 0.05, marAll = c(1, 5, 1, 0), main = "", cex.colorLabels = 1.3)
 dev.off()
 
-# Cluster Modules by MARBLES Eigengenes and Plot Dendrogram
+# Cluster Modules by FEMALE Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$femdata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
 pdf("FEMALE Module Eigengene Dendrogramnu2.pdf", height = 5, width = 10)
@@ -73,7 +81,7 @@ plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
 abline(h = 0.1, col = "red")
 dev.off()
 
-# Cluster Modules by EARLI Eigengenes and Plot Dendrogram
+# Cluster Modules by MALE Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$maledata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
 pdf("MALE Module Eigengene Dendrogramnu2.pdf", height = 5, width = 10)
@@ -84,7 +92,7 @@ abline(h = 0.1, col = "red")
 dev.off()
 rm(METree)
 
-# Compare Eigengene Networks Between MARBLES and EARLI
+# Compare Eigengene Networks Between FEMALE and MALE
 consensusMEs <- consensusOrderMEs(consensusMods$multiMEs)
 pdf(file = "Female and Male comparison WGCNA Eigengene Networksnu2.pdf", width = 8, height = 7)
 sizeGrWindow(width = 8, height = 7)
@@ -203,7 +211,7 @@ labeledHeatmap(Matrix = zscores_sub, xLabels = colnames(zscores_sub), yLabels = 
                zlim = c(-5, 5), main = "", cex.lab.y = 1)
 dev.off()
 
-# Plot All Correlations for MARBLES (Z-scores)
+# Plot All Correlations for FEMALE (Z-scores)
 zscores <- sapply(MEMAs, function(x) x[["Z.female"]])
 rownames(zscores) <- colnames(consensusMEs$female$data)
 colnames(zscores) <- colnames(pheno$female$data)
@@ -221,7 +229,7 @@ labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames
                zlim = c(-5, 5), main = "", cex.lab.y = 1)
 dev.off()
 
-# Plot All Correlations for EARLI (Z-scores)
+# Plot All Correlations for MALE (Z-scores)
 zscores <- sapply(MEMAs, function(x) x[["Z.male"]])
 rownames(zscores) <- colnames(consensusMEs$male$data)
 colnames(zscores) <- colnames(pheno$male$data)

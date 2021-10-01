@@ -3,6 +3,16 @@ library(WGCNA)
 allowWGCNAThreads(4)          # allow multi-threading (optional)
 #> Allowing multi-threading with up to 4 threads.
 
+# Read in normalized counts #
+
+exp_femdata <- read.csv("fcountsnu2.csv")
+exp_maledata <- read.csv("mcountsnu2.csv")
+
+# Transpose normalized counts here and convert to data frame #
+
+femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)])))
+maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)])))
+
 # Choose a set of soft-thresholding powers
 powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
 
