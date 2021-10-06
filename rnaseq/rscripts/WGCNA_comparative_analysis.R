@@ -56,7 +56,7 @@ checkSets(exp)
 
 consensusMods <- blockwiseConsensusModules(exp, checkMissingData = FALSE, maxBlockSize = 50000, corType = "bicor",
                                            maxPOutliers = 0.1, power = 8, networkType = "signed", 
-                                           checkPower = FALSE, TOMType = "signed", 
+                                           checkPower = FALSE, minModuleSize = 50, TOMType = "signed", 
                                            networkCalibration = "full quantile", saveConsensusTOMs = TRUE,
                                            deepSplit = 4, mergeCutHeight = 0.1, verbose = 5)
 table(consensusMods$colors) %>% sort(decreasing = TRUE)
@@ -64,7 +64,7 @@ table(consensusMods$colors)
 
 # Plot Merged Gene Dendrogram with Modules make sure to rename files #
 
-pdf("wgcnatrialnu2.pdf", width = 10, height = 5)
+pdf("wgcnatrialnu3.pdf", width = 10, height = 5)
 sizeGrWindow(10, 5)
 plotDendroAndColors(dendro = consensusMods$dendrograms[[1]], colors = consensusMods$colors, 
                     groupLabels = "Modules", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, 
@@ -74,7 +74,7 @@ dev.off()
 # Cluster Modules by FEMALE Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$femdata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
-pdf("FEMALE Module Eigengene Dendrogramnu2.pdf", height = 5, width = 10)
+pdf("FEMALE Module Eigengene Dendrogramnu3.pdf", height = 5, width = 10)
 sizeGrWindow(height = 5, width = 10)
 par(mar = c(0, 5, 1, 1))
 plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
@@ -84,7 +84,7 @@ dev.off()
 # Cluster Modules by MALE Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$maledata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
-pdf("MALE Module Eigengene Dendrogramnu2.pdf", height = 5, width = 10)
+pdf("MALE Module Eigengene Dendrogramnu3.pdf", height = 5, width = 10)
 sizeGrWindow(height = 5, width = 10)
 par(mar = c(0, 5, 1, 1))
 plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
@@ -94,7 +94,7 @@ rm(METree)
 
 # Compare Eigengene Networks Between FEMALE and MALE
 consensusMEs <- consensusOrderMEs(consensusMods$multiMEs)
-pdf(file = "Female and Male comparison WGCNA Eigengene Networksnu2.pdf", width = 8, height = 7)
+pdf(file = "Female and Male comparison WGCNA Eigengene Networksnu3.pdf", width = 8, height = 7)
 sizeGrWindow(width = 8, height = 7)
 par(cex = 0.8)
 plotEigengeneNetworks(consensusMEs, setLabels = c("Female Cortex", "Male Cortex"), 
@@ -110,13 +110,13 @@ MM_female <- as.data.frame(moduleMembership$femdata$data$bicor)
 colnames(MM_female) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_female), fixed = TRUE)
 MM_female$Probe <- rownames(MM_female)
 MM_female$Module <- consensusMods$colors
-write.table(MM_female, "Consensus Modules FEMALES Probe Module Membershipnu2.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(MM_female, "Consensus Modules FEMALES Probe Module Membershipnu3.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
 MM_male <- as.data.frame(moduleMembership$maledata$data$bicor)
 colnames(MM_male) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_male), fixed = TRUE)
 MM_male$Probe <- rownames(MM_male)
 MM_male$Module <- consensusMods$colors
-write.table(MM_male, "Consensus Modules MALES Probe Module Membershipnu2.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(MM_male, "Consensus Modules MALES Probe Module Membershipnu3.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Get Module Hub Probes and Genes ####
 hubProbes_female <- sapply(colnames(MM_female)[!colnames(MM_female) %in% c("Probe", "Module")], function(x){
@@ -125,8 +125,6 @@ hubProbes_female <- sapply(colnames(MM_female)[!colnames(MM_female) %in% c("Prob
 hubProbes_male <- sapply(colnames(MM_male)[!colnames(MM_male) %in% c("Probe", "Module")], function(x){
   temp <- MM_male[MM_male$Module == x,]
   temp$Probe[temp[, x] == max(temp[, x])] %>% as.character %>% unique %>% sort})
-BiocManager::install("biomaRt")
-library(biomaRt)
 ensembl <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
 hubGenes_female <- lapply(hubProbes_female, function(x){
   getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
@@ -157,7 +155,7 @@ pheno <- list(female = list(data = cov_female),
               male = list(data = cov_male))
 
 # Get Meta-Analysis Correlations ####
-moduleMembership <- read.delim("Consensus Modules FEMALES Probe Module Membershipnu.txt", sep = "\t",
+moduleMembership <- read.delim("Consensus Modules FEMALES Probe Module Membershipnu3.txt", sep = "\t",
                                header = TRUE, stringsAsFactors = FALSE)
 consensusMods2 <- moduleMembership$Module
 MEs_female <- moduleEigengenes(t(exp_femdata[,-c(1)]), colors = consensusMods2)$eigengenes
@@ -186,7 +184,7 @@ dimnames(qvalues) <- dimnames(zscores)
 # Plot Correlations ####
 # Plot All Correlations for Meta Analysis (Z-scores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules Meta Covariate Correlation Plotnu.pdf", width = 11, height = 15)
+pdf("Consensus Modules Meta Covariate Correlation Plotnu3.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -202,7 +200,7 @@ zscores_sub <- zscores[sigRows, sigCols]
 qvalues_sub <- qvalues[sigRows, sigCols]
 colnames(zscores_sub) <- c("Timepoint", "Light")
 star <- apply(qvalues_sub, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules Meta Covariate Correlation Plot Significant Onlynu.pdf", width = 8, height = 11)
+pdf("Consensus Modules Meta Covariate Correlation Plot Significant Onlynu3.pdf", width = 8, height = 11)
 sizeGrWindow(width = 8, height = 11)
 par(mar = c(6, 8, 1, 1))
 labeledHeatmap(Matrix = zscores_sub, xLabels = colnames(zscores_sub), yLabels = rownames(zscores_sub), 
@@ -220,7 +218,7 @@ dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[[which(names(x) %in% c("qvalueStudent.female", "q.Student.female"))]])
 dimnames(qvalues) <- dimnames(zscores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules FEMALES Covariate Correlation Plot zscoresnu.pdf", width = 11, height = 15)
+pdf("Consensus Modules FEMALES Covariate Correlation Plot zscoresnu3.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -238,7 +236,7 @@ dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[[which(names(x) %in% c("qvalueStudent.male", "q.Student.male"))]])
 dimnames(qvalues) <- dimnames(zscores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules MALE Covariate Correlation Plot zscoresnu.pdf", width = 11, height = 15)
+pdf("Consensus Modules MALE Covariate Correlation Plot zscoresnu3.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -272,7 +270,7 @@ colnames(moduleStats_meta) <- c("Module", "n_Probes", "hubProbes_female", "hubPr
                                             "qvalue_male", "Zscore_Meta", "pvalue_Meta", "qvalue_Meta"), 
                                           each = length(colnames(pheno$female$data))), 
                                       rep(colnames(pheno$female$data), 5), sep = "_"))
-write.table(moduleStats_meta, "Consensus Modules Meta Covariate Correlation Stats with Hub Genesnu.txt", sep = "\t", quote = FALSE)
+write.table(moduleStats_meta, "Consensus Modules Meta Covariate Correlation Stats with Hub Genesnu3.txt", sep = "\t", quote = FALSE)
 
 # Always change the color of module for Module Expression ####
 # change the dataset between male and female to acquire the correct probes
