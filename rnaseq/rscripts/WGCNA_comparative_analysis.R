@@ -36,7 +36,10 @@ allowWGCNAThreads()
 
 exp_femdata <- read.csv("fcountsnu2.csv")
 exp_maledata <- read.csv("mcountsnu2.csv")
-
+male<-as.data.frame(exp_maledata)
+rownames(male$Gene_ID) = names(male)[-c(1)]
+names(male$Gene_ID) = male$Gene_ID
+female<-data.matrix(exp_femdata)
 # Check directories #
 
 getwd()
@@ -55,7 +58,7 @@ checkSets(exp)
 # Run WGCNA analysis #
 
 consensusMods <- blockwiseConsensusModules(exp, checkMissingData = FALSE, maxBlockSize = 50000, corType = "bicor",
-                                           maxPOutliers = 0.1, power = 8, networkType = "signed", 
+                                           maxPOutliers = 0.1, power = 4, networkType = "signed", 
                                            checkPower = FALSE, minModuleSize = 50, TOMType = "signed", 
                                            networkCalibration = "full quantile", saveConsensusTOMs = TRUE,
                                            deepSplit = 4, mergeCutHeight = 0.1, verbose = 5)

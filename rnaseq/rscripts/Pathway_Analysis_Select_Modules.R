@@ -1,15 +1,30 @@
 ### Pathway Analaysis for Select Modules ###
 
-setwd("~/Documents/Circadian-Analysis")
+setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/WGCNAoptimization/CircadianModules/Males/GOterms")
 
 packages <- c("edgeR", "tidyverse", "magrittr", "RColorBrewer", "org.Mm.eg.db", "AnnotationDbi",
               "enrichR", "openxlsx", "gt", "glue", "DMRichR")
+BiocManager::install("enrichR")
+BiocManager::install("DMRichR")
+install.packages("DMRichR")
+library(enrichR)
+library(DMRichR)
+
+if(!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+if(!requireNamespace("remotes", quietly = TRUE))
+  install.packages("remotes")
+Sys.setenv("R_REMOTES_NO_ERRORS_FROM_WARNINGS" = TRUE)
+BiocManager::install("ben-laufer/DMRichR")
+if(R.Version()$major < 4)
+  install.packages("dmrseq", repos = "https://bioconductor.org/packages/3.12/bioc")
+
 enrichR:::.onAttach() # Needed or else "EnrichR website not responding"
 stopifnot(suppressMessages(sapply(packages, require, character.only = TRUE)))
 
 ### Loading Data ###
 
-modules_interest = c("green", "honeydew", "orangered4")
+modules_interest = c("cyan", "navajowhite1")
 
 lapply(modules_interest, function(module) {
   data = read.csv(glue::glue("module_interest_{module}_males.csv")) 

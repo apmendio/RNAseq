@@ -7,7 +7,8 @@ allowWGCNAThreads(4)          # allow multi-threading (optional)
 
 exp_femdata <- read.csv("fcountsnu2.csv")
 exp_maledata <- read.csv("mcountsnu2.csv")
-
+exp_femdata <- t(exp_femdata)
+exp_maledata <- t(exp_maledata)
 # Transpose normalized counts here and convert to data frame #
 
 femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)])))
@@ -18,7 +19,7 @@ powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
 
 # Call the network topology analysis function
 sft = pickSoftThreshold(
-  input_mat_male,             # <= Input data
+  exp_maledata,             # <= Input data
   blockSize = 30,
   powerVector = powers,
   verbose = 5
