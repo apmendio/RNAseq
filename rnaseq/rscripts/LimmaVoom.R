@@ -87,7 +87,7 @@ plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #Extracting "normalized" expression table
 logcpm <- cpm(d, prior.count=2, log=TRUE)
 write.table(logcpm,"counts_normalizednu.txt",sep="\t",quote=F)
-
+logcpm2 <- fpkm()
 #Transpose counts for WGCNA and Circadian Analysis
 input_mat = t(logcpm)
 dim(input_mat)
