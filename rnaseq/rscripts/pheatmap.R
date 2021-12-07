@@ -23,7 +23,7 @@ circdata3 <- as.matrix(circdata3)
 
 pheatmap(circdata3, cluster_rows=TRUE, cluster_cols=FALSE)
 
-mcounts <- read.csv("mcountsnu2.average.csv", header = T, row.names = "Gene_ID")
+mcounts4 <- read.csv("mcountsnu2.average.csv", header = T, row.names = "Gene_ID")
 fcounts <- read.csv("fcountsnu2.average.csv", header = T, row.names = "Gene_ID")
 
 mcounts <- as.matrix(mcounts)
@@ -45,7 +45,7 @@ rownames(mcounts) = rownames(row_order)
 match_test <- match(rownames(mcounts), rownames(row_order))
 match_test <- as.data.frame(match_test)
 modules = data.frame("Modules" = module_names)
-names(modules) = "modules"
+rownames(modules) = rownames(mcounts4)
 rownames(morganized) = rownames(mrow_order)
 
 pheatmap(mcounts, main = "All Male Genes", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = modules)
@@ -56,3 +56,27 @@ mh <- pheatmap(mcounts, main = "All Male Genes", scale = "row", cluster_rows = T
 pheatmap(fcounts, main = "All Female Genes", scale = "row", cluster_rows = TRUE, cluster_cols = TRUE, show_rownames = FALSE)
 fh <- pheatmap(fcounts, main = "All Female Genes", scale = "row", cluster_rows = TRUE, cluster_cols = FALSE, show_rownames = FALSE)
 mh + fh
+
+top.5.modules <- read.csv("top.5.modules.csv")
+top.5.modules.mem <- read.csv("top.5.modules.mem.csv")
+top.5.modules.mem <- as.data.frame(top.5.modules.mem[,2])
+names(top.5.modules.mem) <- "Module Membership"
+rownames(top.5.modules.mem) <- colnames(top.5.modules.df[,-c(1)])
+top.5.modules.df <- as.data.frame(top.5.modules[,2:9])
+rownames(top.5.modules.df) <- top.5.modules$Gene_ID
+rownames(top.5.modules.mem) <- top.5.modules$Gene_ID
+
+top.5.modules.mem <- as.data.frame(top.5.modules[,10:11])
+pheatmap(top.5.modules.df, main ="Top 5 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.5.modules.mem)
+
+top.10.modules <- read.csv("top.10.modules.csv")
+top.10.modules.mem <- read.csv("top.10.modules.mem.csv")
+top.10.modules.mem <- as.data.frame(top.10.modules.mem[,2])
+names(top.10.modules.mem) <- "Module Membership"
+rownames(top.10.modules.mem) <- colnames(top.10.modules.df[,-c(1)])
+top.10.modules.df <- as.data.frame(top.10.modules[,2:9])
+rownames(top.10.modules.df) <- top.10.modules$Gene_ID
+rownames(top.10.modules.mem) <- top.10.modules$Gene_ID
+
+top.10.modules.mem <- as.data.frame(top.10.modules[,10:11])
+pheatmap(top.10.modules.df, main ="Top 10 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.10.modules.mem)
