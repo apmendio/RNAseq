@@ -1,0 +1,34 @@
+trim(){
+sample=$1
+fastq1=${sample}_1.fastq.gz
+fastq2=${sample}_2.fastq.gz
+
+call="trim_galore \
+	--paired \
+	--cores 2 \
+	--quality \
+	${fastq1} \
+	${fastq2}" 
+
+}
+export -f trim
+cat task_samples.txt | parallel --will-cite --jobs 9 trim
+
+trim_galore --paired --cores 2 SRR650310_1.fastq.gz SRR650310_2.fastq.gz
+
+STAR \
+	--runThreadN 8 \
+	--genomeDir /share/lasallelab/genomes/GRCm38/star_150/ \
+	--readFilesIn SRR650310_1_val_1.fq.gz SRR650310_2_val_2.fq.gz \
+	--readFilesCommand zcat \
+	--outFilterType BySJout \
+	--outFilterMultimapNmax 20 \
+	--alignSJoverhangMin 8 \
+	--alignSJDBoverhangMin 1 \
+	--outFilterMismatchNmax 999 
+	--outFilterMismatchNoverReadLmax 0.04 \
+	--alignIntronMin 20 \
+	--alignIntronMax 1000000 \
+	--alignMatesGapMax 1000000 \
+	--outSAMtype BAM SortedByCoordinate \
+	--quantMode GeneCounts

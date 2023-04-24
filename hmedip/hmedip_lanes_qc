@@ -1,0 +1,122 @@
+# Arguments
+project=hmedip_lane1
+#https://bioinformatics.ucdavis.edu/research-computing/documentation/archiving-slims-data/
+SLIMSstring=ebkti2bd8z
+SLIMSdir=Un_DTSA432/Project_JLAM_Nova393P_Mendiola
+genome=mm10
+programsPATH=/share/lasallelab/programs
+
+echo "Creating directory for $project"
+mkdir ${project}
+
+echo "Downloading fastq files for $SLIMSstring"
+call="rsync \
+-avL \
+slimsdata.genomecenter.ucdavis.edu::slims/${SLIMSstring}/ \
+${project}"
+	
+echo ${call}
+eval ${call}
+
+echo "md5sum check"
+cd ${project}/${SLIMSdir}
+if md5sum -c \@md5Sum.md5
+then
+    echo
+    echo "All files have the correct md5sum"
+else
+    echo "ERROR: Some files are corrupt or missing"
+    exit 1
+fi
+
+# Arguments
+project=hmedip_lane2
+#https://bioinformatics.ucdavis.edu/research-computing/documentation/archiving-slims-data/
+SLIMSstring=fg42s4twx9
+SLIMSdir=Un_DTSA466/Project_JLAM_Nova543P_Mendiola
+genome=mm10
+programsPATH=/share/lasallelab/programs
+
+echo "Creating directory for $project"
+mkdir ${project}
+
+echo "Downloading fastq files for $SLIMSstring"
+call="rsync \
+-avL \
+slimsdata.genomecenter.ucdavis.edu::slims/${SLIMSstring}/ \
+${project}"
+	
+echo ${call}
+eval ${call}
+
+echo "md5sum check"
+cd ${project}/${SLIMSdir}
+if md5sum -c \@md5Sum.md5
+then
+    echo
+    echo "All files have the correct md5sum"
+else
+    echo "ERROR: Some files are corrupt or missing"
+    exit 1
+fi
+
+# Arguments
+project=hmedip_lane3
+#https://bioinformatics.ucdavis.edu/research-computing/documentation/archiving-slims-data/
+SLIMSstring=q9bktttu
+SLIMSdir=Un_DTSA487/Project_JLAM_Nova543P_Mendiola
+genome=mm10
+programsPATH=/share/lasallelab/programs
+
+echo "Creating directory for $project"
+mkdir ${project}
+
+echo "Downloading fastq files for $SLIMSstring"
+call="rsync \
+-avL \
+slimsdata.genomecenter.ucdavis.edu::slims/${SLIMSstring}/ \
+${project}"
+	
+echo ${call}
+eval ${call}
+
+echo "md5sum check"
+cd ${project}/${SLIMSdir}
+if md5sum -c \@md5Sum.md5
+then
+    echo
+    echo "All files have the correct md5sum"
+else
+    echo "ERROR: Some files are corrupt or missing"
+    exit 1
+fi
+
+project=hmedip_lane4
+#https://bioinformatics.ucdavis.edu/research-computing/documentation/archiving-slims-data/
+SLIMSstring=eutq2nqux
+SLIMSdir=Un_DTSA524/Project_JLAM_Nova543_Mendiola
+genome=mm10
+programsPATH=/share/lasallelab/programs
+
+echo "Creating directory for $project"
+mkdir ${project}
+
+echo "Downloading fastq files for $SLIMSstring"
+call="rsync \
+-avL \
+slimsdata.genomecenter.ucdavis.edu::slims/${SLIMSstring}/ \
+${project}"
+	
+echo ${call}
+eval ${call}
+
+echo "md5sum check"
+cd ${project}/${SLIMSdir}
+if md5sum -c \@md5Sum.md5
+then
+    echo
+    echo "All files have the correct md5sum"
+else
+    echo "ERROR: Some files are corrupt or missing"
+    exit 1
+fi

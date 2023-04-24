@@ -1,0 +1,99 @@
+align(){
+
+	######################
+	# Set Up Environment #
+	######################
+
+	directory=${PWD}/
+	sample=$1
+	rawpath=${directory}raw_sequences/
+	mappath=${directory}${sample}
+	fastq1=raw_sequences/${sample}.fastq
+	trim1=${sample}_trimmed.fq
+	BAM=${sample}_Aligned.sortedByCoord.out.bam
+
+	########
+	# Trim #
+	########
+	# Use 2color for NovaSeq and NextSeq, replace with quality for HiSeq and MiSeq
+	# Should trim for STAR: https://github.com/alexdobin/STAR/issues/455#issuecomment-407539412
+
+	mkdir ${mappath}
+
+	call="trim_galore \
+	--length_1 50 \
+	--cores 2 \
+	--quality 20 \
+	--fastqc \
+	--output_dir ${mappath} \
+	${fastq1}" 
+
+	echo $call
+	eval $call
+
+	#########
+	# Align #
+	#########
+	# adjust threads and genome directory
+	# Use zcat command for fastq.gz https://www.biostars.org/p/243683/
+	# ENCODE options from section 3.3.2 of STAR manual
+	# Use qauntMode to get GeneCounts for R https://www.biostars.org/p/218995/
+
+	cd ${mappath}
+
+	call="STAR \
+	--runThreadN 8 \
+	--genomeDir /share/lasallelab/Aron/baboon_rnaseq/star_50/
+	--readFilesIn ${trim1} \
+	--outFilterType BySJout \
+	--outFilterMultimapNmax 20 \
+	--alignSJoverhangMin 8 \
+	--alignSJDBoverhangMin 1 \
+	--outFilterMismatchNmax 999 
+	--outFilterMismatchNoverReadLmax 0.04 \
+	--alignIntronMin 20 \
+	--alignIntronMax 1000000 \
+	--alignMatesGapMax 1000000 \
+	--outSAMtype BAM SortedByCoordinate \
+	--outFileNamePrefix ${sample}_ \
+	--quantMode GeneCounts"
+
+	echo $call
+	eval $call
+
+	#########
+	# Index #
+	#########
+
+	call="samtools \
+	index \
+	-@ 7 \
+	${BAM}"
+
+	echo $call
+	eval $call
+
+}
+export -f align
+
+################
+# Load Modules #
+################
+
+export mainPath="/share/lasallelab"
+module load star
+module load samtools
+export PYTHON_EGG_CACHE="${mainPath}/programs/CpG_Me"
+module load trim_galore
+source activate cutadapt-4.1
+
+#######
+# Run #
+#######
+
+cd /share/lasallelab/Aron/baboon_rnaseq
+
+mkdir alignLogs
+
+parallel --dry-run --will-cite --results alignLogs -j 12 "align {}" :::: SraAccList.txt
+parallel --verbose --will-cite --results alignLogs -j 12 "align {}" :::: SraAccList.txt

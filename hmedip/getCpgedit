@@ -1,0 +1,31 @@
+getCpGs <- function(colData, path = getwd(), pattern = "*_1_val_1_bismark_bt2_pe.deduplicated.bismark.cov.gz.CpG_report.txt.gz",
+                    sameLoci = TRUE,
+                    chroms = c(paste("chr", 1:22, sep = ""), "chrX", "chrY",
+                               "chrM"),
+                    BPPARAM = BiocParallel::MulticoreParam(10), save = TRUE,
+                    file = "Unfiltered_BSseq.rds", verbose = TRUE){
+        if(verbose){
+                message("[getCpGs] Loading CpG-level data")
+        }
+        files <- list.files(path, pattern = pattern) %>%
+                .[pmatch(rownames(colData), table = .)]
+        if(sameLoci){
+                loci <- bsseq:::.readBismarkAsFWGRanges(files[1])
+        } else {
+                loci <- NULL
+        }
+        bs <- read.bismark(files, loci = loci, colData = colData,
+                           BPPARAM = BPPARAM, verbose = verbose) %>%
+                chrSelectBSseq(seqnames = chroms)
+        if(verbose){
+                message("[getCpGs] Final BSseq Object:")
+                print(bs)
+        }
+        if(save){
+                if(verbose){
+                        message("[getCpGs] Saving file as ", file)
+                }
+                saveRDS(bs, file = file)
+        }
+        return(bs)
+}

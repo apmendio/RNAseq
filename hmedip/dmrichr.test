@@ -1,0 +1,61 @@
+call="nohup \
+Rscript \
+--vanilla \
+/share/lasallelab/programs/DMRichR/DM.R \
+--genome mm10 \
+--coverage 1 \
+--perGroup '0.75' \
+--minCpGs 5 \
+--maxPerms 10 \
+--maxBlockPerms 10 \
+--cutoff '0.05' \
+--testCovariate Timepoint \
+--adjustCovariate 'Sex' \
+--sexCheck TRUE \
+--GOfuncR TRUE \
+--cores 20 \
+--EnsDb FALSE \
+> DMRichR.log 2>&1 &"
+
+echo $call
+eval $call 
+echo $! > save_pid.txt
+tail -f DMRichR.log
+
+call="nohup \
+Rscript \
+--vanilla \
+/share/lasallelab/programs/DMRichR/DM.R \
+--genome mm10 \
+--coverage 1 \
+--perGroup '0.75' \
+--minCpGs 5 \
+--maxPerms 10 \
+--maxBlockPerms 10 \
+--cutoff '0.05' \
+--sexCheck TRUE \
+--GOfuncR TRUE \
+--cores 20 \
+--EnsDb FALSE \
+> DMRichR.log 2>&1 &"
+
+DM.R(
+  genome = "mm10",
+  coverage = 1,
+  perGroup = 0.75,
+  minCpGs = 5,
+  maxPerms = 10,
+  maxBlockPerms = 10,
+  cutoff = 0.05,
+  testCovariate = "Timepoint",
+  adjustCovariate = "Sex",
+  matchCovariate = NULL,
+  cores = 20,
+  GOfuncR = TRUE,
+  sexCheck = TRUE,
+  EnsDb = TRUE,
+  cellComposition = FALSE
+)
+
+AnnotationHub::setAnnotationHubOption("CACHE", "/share/lasallelab/Aron/R_packages")
+ExperimentHub::setExperimentHubOption("CACHE", "/share/lasallelab/Aron/R_packages")

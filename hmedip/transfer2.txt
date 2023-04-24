@@ -1,0 +1,5 @@
+rsync -azPnv apmendio@epigenerate.genomecenter.ucdavis.edu:/share/lasallelab/Aron/hmcdip_seq_analysis "/Volumes/T7 Shield/epigenerate_backup"
+
+rsync -azP apmendio@epigenerate.genomecenter.ucdavis.edu:/share/lasallelab/Aron/hmcdip_seq_analysis "/Volumes/T7 Shield/epigenerate_backup"
+
+rsync -azPnv "/Volumes/Samsung_T5/Novogene" apmendio@epigenerate.genomecenter.ucdavis.edu:/share/lasallelab/data/2022_CLAMS_RW_RNASEQAM

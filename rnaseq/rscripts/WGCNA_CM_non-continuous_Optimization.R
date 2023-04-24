@@ -1,8 +1,15 @@
 # Packages ####
-setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/WGCNA_Final")
-setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/individualWGCNA")
+setwd("/Users/aron/Desktop/LaSalle Lab/Analysis/WGCNAoptimization")
 sapply(c("tidyverse", "oligo", "sva","pd.hugene.2.0.st", "matrixStats", "biomaRt", "WGCNA", "VennDiagram"), require, character.only = TRUE)
 
+library(tidyverse)
+library(oligo)
+library(sva)
+library(pd.hugene.2.0.st)
+library(matrixStats)
+library(biomaRt)
+library(WGCNA)
+library(VennDiagram)
 BiocManager::install("tidyverse")
 BiocManager::install("oligo")
 BiocManager::install("sva")
@@ -13,42 +20,28 @@ BiocManager::install("WGCNA")
 BiocManager::install("VennDiagram")
 BiocManager::install("magrittr") # package installations are only needed the first time you use it
 BiocManager::install("dplyr")    # alternative installation of the %>%
-BiocManager::install("ggplot2")
-
-library(tidyverse)
-library(oligo)
-library(sva)
-library(pd.hugene.2.0.st)
-library(matrixStats)
-library(biomaRt)
-library(WGCNA)
-library(VennDiagram)
 library(magrittr) # needs to be run every time you start R and want to use %>%
 library(dplyr)    # alternatively, this also loads %>%
+BiocManager::install("ggplot2")
 library(ggplot2)
-
+BiocManager::install("biomaRt")
+library(biomaRt)
 # Data ####
 options(stringsAsFactors = FALSE)
 Sys.setenv(R_THREADS = 1)
 enableWGCNAThreads()
 allowWGCNAThreads()
-
-# Read in normalized counts #
-
 exp_femdata <- read.csv("fcountsnu2.csv")
 exp_maledata <- read.csv("mcountsnu2.csv")
-#male<-as.data.frame(exp_maledata)
-#rownames(male$Gene_ID) = names(male)[-c(1)]
-#names(male$Gene_ID) = male$Gene_ID
-#female<-data.matrix(exp_femdata)
-# Check directories #
-
+#exp_femdata <- read.csv("fCounts2.csv")
+#exp_maledata <- read.csv("mCounts.csv")
+#exp_femdata <- t(exp_femdata)
+#exp_maledata <- t(exp_maledata)
+#write.csv(exp_femdata, file = "fcountsnu2.csv", append = TRUE, quote = FALSE, sep = "\t")
+#write.csv(exp_maledata, file = "mcountsnu2.csv", append = TRUE, quote = FALSE, sep = "\t")
 
 getwd()
-
-# Format normalized counts for WGCNA (input requires transposing) #
-
-#head(exp_femdata[,-c(1)])
+head(exp_femdata[,-c(1)])
 exp <- list(femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)]))),
             maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)]))))
 names(exp$femdata$data) = exp_femdata$Gene_ID
@@ -57,39 +50,35 @@ names(exp$maledata$data) = exp_maledata$Gene_ID
 rownames(exp$maledata$data) = names(exp_maledata)[-c(1)]
 checkSets(exp)
 
-# Run WGCNA analysis #
-
 consensusMods <- blockwiseConsensusModules(exp, checkMissingData = FALSE, maxBlockSize = 50000, corType = "bicor",
-                                           maxPOutliers = 0.1, power = 4, networkType = "signed", 
-                                           checkPower = FALSE, minModuleSize = 100, TOMType = "signed", 
+                                           maxPOutliers = 0.1, power = 8, networkType = "signed", 
+                                           checkPower = FALSE, TOMType = "signed", 
                                            networkCalibration = "full quantile", saveConsensusTOMs = TRUE,
                                            deepSplit = 4, mergeCutHeight = 0.1, verbose = 5)
 table(consensusMods$colors) %>% sort(decreasing = TRUE)
 table(consensusMods$colors)
-
-# Plot Merged Gene Dendrogram with Modules make sure to rename files #
-
-pdf("wgcnatrialnu3.pdf", width = 10, height = 5)
+# Plot Merged Gene Dendrogram with Modules
+pdf("wgcnatrialnu.pdf", width = 10, height = 5)
 sizeGrWindow(10, 5)
 plotDendroAndColors(dendro = consensusMods$dendrograms[[1]], colors = consensusMods$colors, 
                     groupLabels = "Modules", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, 
                     guideHang = 0.05, marAll = c(1, 5, 1, 0), main = "", cex.colorLabels = 1.3)
 dev.off()
 
-# Cluster Modules by FEMALE Eigengenes and Plot Dendrogram
+# Cluster Modules by MARBLES Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$femdata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
-pdf("FEMALE Module Eigengene Dendrogramnu3.pdf", height = 5, width = 10)
+pdf("FEMALE Module Eigengene Dendrogramnu.pdf", height = 5, width = 10)
 sizeGrWindow(height = 5, width = 10)
 par(mar = c(0, 5, 1, 1))
 plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
 abline(h = 0.1, col = "red")
 dev.off()
 
-# Cluster Modules by MALE Eigengenes and Plot Dendrogram
+# Cluster Modules by EARLI Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(consensusMods$multiMEs$maledata$data, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
-pdf("MALE Module Eigengene Dendrogramnu3.pdf", height = 5, width = 10)
+pdf("MALE Module Eigengene Dendrogramnu.pdf", height = 5, width = 10)
 sizeGrWindow(height = 5, width = 10)
 par(mar = c(0, 5, 1, 1))
 plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
@@ -97,9 +86,9 @@ abline(h = 0.1, col = "red")
 dev.off()
 rm(METree)
 
-# Compare Eigengene Networks Between FEMALE and MALE
+# Compare Eigengene Networks Between MARBLES and EARLI
 consensusMEs <- consensusOrderMEs(consensusMods$multiMEs)
-pdf(file = "Female and Male comparison WGCNA Eigengene Networksnu3.pdf", width = 8, height = 7)
+pdf(file = "Female and Male comparison WGCNA Eigengene Networksnu.pdf", width = 8, height = 7)
 sizeGrWindow(width = 8, height = 7)
 par(cex = 0.8)
 plotEigengeneNetworks(consensusMEs, setLabels = c("Female Cortex", "Male Cortex"), 
@@ -115,13 +104,13 @@ MM_female <- as.data.frame(moduleMembership$femdata$data$bicor)
 colnames(MM_female) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_female), fixed = TRUE)
 MM_female$Probe <- rownames(MM_female)
 MM_female$Module <- consensusMods$colors
-write.table(MM_female, "Consensus Modules FEMALES Probe Module Membershipnu3.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(MM_female, "Consensus Modules FEMALES Probe Module Membershipnu.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
 MM_male <- as.data.frame(moduleMembership$maledata$data$bicor)
 colnames(MM_male) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_male), fixed = TRUE)
 MM_male$Probe <- rownames(MM_male)
 MM_male$Module <- consensusMods$colors
-write.table(MM_male, "Consensus Modules MALES Probe Module Membershipnu3.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(MM_male, "Consensus Modules MALES Probe Module Membershipnu.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Get Module Hub Probes and Genes ####
 hubProbes_female <- sapply(colnames(MM_female)[!colnames(MM_female) %in% c("Probe", "Module")], function(x){
@@ -138,6 +127,9 @@ hubGenes_male <- lapply(hubProbes_male, function(x){
   getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
         verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
 
+test <- lapply(colnames(MM_female), function(x){
+  getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
+        verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
 # Combine Covariates ####
 cov_female <- read.csv("FemaleTraits.csv")
 cov_male <- read.csv("MaleTraits.csv")
@@ -160,7 +152,7 @@ pheno <- list(female = list(data = cov_female),
               male = list(data = cov_male))
 
 # Get Meta-Analysis Correlations ####
-moduleMembership <- read.delim("Consensus Modules FEMALES Probe Module Membershipnu3.txt", sep = "\t",
+moduleMembership <- read.delim("Consensus Modules FEMALES Probe Module Membershipnu.txt", sep = "\t",
                                header = TRUE, stringsAsFactors = FALSE)
 consensusMods2 <- moduleMembership$Module
 MEs_female <- moduleEigengenes(t(exp_femdata[,-c(1)]), colors = consensusMods2)$eigengenes
@@ -172,7 +164,7 @@ consensusMEs <- orderMEs(consensusMEs)
 
 MEMAs <- list()
 for (t in 1:20){
-  MEMAs[[t]] = metaAnalysis(consensusMEs, mtd.subset(pheno, colIndex = t), useRankPvalue = FALSE, 
+  MEMAs[[t]] = metaAnalysis(consensusMEs, mtd.subset(pheno2, colIndex = t), useRankPvalue = FALSE, 
                             corFnc = bicor,
                             corOptions = list(maxPOutliers = 0.1, use = "pairwise.complete.obs"), 
                             getQvalues = TRUE)
@@ -189,7 +181,7 @@ dimnames(qvalues) <- dimnames(zscores)
 # Plot Correlations ####
 # Plot All Correlations for Meta Analysis (Z-scores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules Meta Covariate Correlation Plotnu3.pdf", width = 11, height = 15)
+pdf("Consensus Modules Meta Covariate Correlation Plotnu.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -205,7 +197,7 @@ zscores_sub <- zscores[sigRows, sigCols]
 qvalues_sub <- qvalues[sigRows, sigCols]
 colnames(zscores_sub) <- c("Timepoint", "Light")
 star <- apply(qvalues_sub, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules Meta Covariate Correlation Plot Significant Onlynu3.pdf", width = 8, height = 11)
+pdf("Consensus Modules Meta Covariate Correlation Plot Significant Onlynu.pdf", width = 8, height = 11)
 sizeGrWindow(width = 8, height = 11)
 par(mar = c(6, 8, 1, 1))
 labeledHeatmap(Matrix = zscores_sub, xLabels = colnames(zscores_sub), yLabels = rownames(zscores_sub), 
@@ -214,7 +206,7 @@ labeledHeatmap(Matrix = zscores_sub, xLabels = colnames(zscores_sub), yLabels = 
                zlim = c(-5, 5), main = "", cex.lab.y = 1)
 dev.off()
 
-# Plot All Correlations for FEMALE (Z-scores)
+# Plot All Correlations for MARBLES (Z-scores)
 zscores <- sapply(MEMAs, function(x) x[["Z.female"]])
 rownames(zscores) <- colnames(consensusMEs$female$data)
 colnames(zscores) <- colnames(pheno$female$data)
@@ -223,7 +215,7 @@ dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[[which(names(x) %in% c("qvalueStudent.female", "q.Student.female"))]])
 dimnames(qvalues) <- dimnames(zscores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules FEMALES Covariate Correlation Plot zscoresnu3.pdf", width = 11, height = 15)
+pdf("Consensus Modules FEMALES Covariate Correlation Plot zscoresnu.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -232,7 +224,7 @@ labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames
                zlim = c(-5, 5), main = "", cex.lab.y = 1)
 dev.off()
 
-# Plot All Correlations for MALE (Z-scores)
+# Plot All Correlations for EARLI (Z-scores)
 zscores <- sapply(MEMAs, function(x) x[["Z.male"]])
 rownames(zscores) <- colnames(consensusMEs$male$data)
 colnames(zscores) <- colnames(pheno$male$data)
@@ -241,7 +233,7 @@ dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[[which(names(x) %in% c("qvalueStudent.male", "q.Student.male"))]])
 dimnames(qvalues) <- dimnames(zscores)
 star <- apply(qvalues, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
-pdf("Consensus Modules MALE Covariate Correlation Plot zscoresnu3.pdf", width = 11, height = 15)
+pdf("Consensus Modules MALE Covariate Correlation Plot zscoresnu.pdf", width = 11, height = 15)
 sizeGrWindow(width = 11, height = 15)
 par(mar = c(9, 8, 1, 2))
 labeledHeatmap(Matrix = zscores, xLabels = colnames(zscores), yLabels = rownames(zscores), 
@@ -275,31 +267,16 @@ colnames(moduleStats_meta) <- c("Module", "n_Probes", "hubProbes_female", "hubPr
                                             "qvalue_male", "Zscore_Meta", "pvalue_Meta", "qvalue_Meta"), 
                                           each = length(colnames(pheno$female$data))), 
                                       rep(colnames(pheno$female$data), 5), sep = "_"))
-write.table(moduleStats_meta, "Consensus Modules Meta Covariate Correlation Stats with Hub Genesnu3.txt", sep = "\t", quote = FALSE)
+write.table(moduleStats_meta, "Consensus Modules Meta Covariate Correlation Stats with Hub Genesnu.txt", sep = "\t", quote = FALSE)
 
 # Always change the color of module for Module Expression ####
 # change the dataset between male and female to acquire the correct probes
-honeydew_probes <- colnames(exp$femaledata$data)[consensusMods$colors == "honeydew"]
+maroon_probes <- colnames(exp$femdata$data)[consensusMods$colors == "maroon"]
 ensembl <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
-honeydew_genes <- getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", 
-                        values = honeydew_probes, mart = ensembl) %>% unlist %>% as.character %>% unique %>% sort
-table(honeydew_genes)
-write.table(honeydew_genes, "malehoneydewModule_geneslist.txt", sep = "\t", quote = FALSE)
-
-##################################################Module gene list ####################################################
-honeydew_probes_male <- colnames(exp$maledata$data)[consensusMods$colors == "orangered4"]
-ensembl_male <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
-honeydew_genes_male <- getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", 
-                        values = honeydew_probes_male, mart = ensembl_male) %>% unlist %>% as.character %>% unique %>% sort
-table(honeydew_genes_male)
-
-honeydew_probes_female <- colnames(exp$femdata$data)[consensusMods$colors == "honeydew"]
-ensembl_female <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
-honeydew_genes_female <- getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", 
-                             values = honeydew_probes_female, mart = ensembl) %>% unlist %>% as.character %>% unique %>% sort
-table(honeydew_genes_female, honeydew_genes_male)
-#######################################################################################################################
-table(honeydew_genes)
+maroon_genes <- getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", 
+                        values = maroon_probes, mart = ensembl) %>% unlist %>% as.character %>% unique %>% sort
+table(maroon_genes)
+write.table(maroon_genes, "maroonModule_geneslistnu.txt", sep = "\t", quote = FALSE)
 # skymaroon1 module eigengene plots
 maroon_ME_female <- consensusMEs$female$data$MEmaroon
 maroon_ME_male <- consensusMEs$male$data$MEmaroon

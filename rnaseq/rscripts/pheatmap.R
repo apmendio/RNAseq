@@ -71,7 +71,6 @@ pheatmap(top.5.modules.df, main ="Top 5 Male Modules", scale = "row", cluster_ro
 
 top.10.modules <- read.csv("modules.5to10.csv")
 top.10.modules.mem <- as.data.frame(top.10.modules[,10:11])
-names(top.10.modules.mem) <- "Module Membership"
 top.10.modules.df <- as.data.frame(top.10.modules[,2:9])
 rownames(top.10.modules.df) <- top.10.modules$Gene_ID
 rownames(top.10.modules.mem) <- top.10.modules$Gene_ID
@@ -80,35 +79,37 @@ pheatmap(top.10.modules.df, main ="Top 10 Male Modules", scale = "row", cluster_
 
 top.15.modules <- read.csv("modules.11to15.csv")
 top.15.modules.mem <- as.data.frame(top.15.modules[,10:11])
-names(top.15.modules.mem) <- "Module Membership"
 top.15.modules.df <- as.data.frame(top.15.modules[,2:9])
 rownames(top.15.modules.df) <- top.15.modules$Gene_ID
 rownames(top.15.modules.mem) <- top.15.modules$Gene_ID
 
-top.15.modules.mem <- as.data.frame(top.15.modules[,10:11])
 pheatmap(top.15.modules.df, main ="Top 15 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.15.modules.mem)
 
 top.20.modules <- read.csv("modules.16to20.csv")
-top.20.modules.mem <- read.csv("top.20.modules.mem.csv")
-top.20.modules.mem <- as.data.frame(top.20.modules.mem[,2])
-names(top.20.modules.mem) <- "Module Membership"
-rownames(top.20.modules.mem) <- colnames(top.20.modules.df[,-c(1)])
+top.20.modules.mem <- as.data.frame(top.20.modules[,10:11])
 top.20.modules.df <- as.data.frame(top.20.modules[,2:9])
 rownames(top.20.modules.df) <- top.20.modules$Gene_ID
 rownames(top.20.modules.mem) <- top.20.modules$Gene_ID
 
-top.20.modules.mem <- as.data.frame(top.20.modules[,10:11])
 pheatmap(top.20.modules.df, main ="Top 20 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.20.modules.mem)
 
 top.25.modules <- read.csv("modules.21to25.csv")
-top.25.modules.mem <- read.csv("top.25.modules.mem.csv")
-top.25.modules.mem <- as.data.frame(top.25.modules.mem[,2])
-names(top.25.modules.mem) <- "Module Membership"
-rownames(top.25.modules.mem) <- colnames(top.25.modules.df[,-c(1)])
+top.25.modules.mem <- as.data.frame(top.25.modules[,10:11])
 top.25.modules.df <- as.data.frame(top.25.modules[,2:9])
 rownames(top.25.modules.df) <- top.25.modules$Gene_ID
 rownames(top.25.modules.mem) <- top.25.modules$Gene_ID
 
-top.25.modules.mem <- as.data.frame(top.25.modules[,10:11])
-pheatmap(top.25.modules.df, main ="Top 25 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.25.modules.mem)
+anno <- read.delim("ensembl_mm_100.tsv",as.is=T)
 
+dim(anno)
+head(anno)
+tail(anno)
+any(duplicated(anno$Gene.stable.ID))
+table(top.25.modules.mem$Probe)
+names(top.25.modules.mem)
+results <- top.25.modules.mem
+results <- data.frame(results,anno[match(results$Probe,anno$Gene.stable.ID),],top.25.modules.mem[match(results$Probe,rownames(top.25.modules.mem)),])
+results <- results[,-c(1,3,4,6:14)]
+pheatmap(top.25.modules.df, main ="Top 25 Male Modules", scale = "row", cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = FALSE, annotation_row = top.25.modules.mem, row_split = top.25.modules.mem$Module)
+
+library(ComplexHeatmap)

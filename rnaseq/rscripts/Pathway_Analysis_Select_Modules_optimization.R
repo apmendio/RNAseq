@@ -26,8 +26,21 @@ stopifnot(suppressMessages(sapply(packages, require, character.only = TRUE)))
 
 modules_interest = c("pink", "purple", "red", "salmon", "darkturquoise")
 modules_interest = c("yellow")
+
+modules_interest = read.csv("module.distribution.csv")
+modules_interest <- modules_interest$Module
+modules_interest = c("grey")
+modules_interest <- c("tan", "salmon", "cyan", "midnightblue", "lightcyan", "lightyellow", "royalblue", "darkred")
+modules_interest <- c("greenyellow")
+modules_interest
+getwd()
+
+modules_interest = module.dist$Module
+modules_interest <- c("darkgrey")
+#DMRichR is not optimized for 2021GO
+
 lapply(modules_interest, function(module) {
-  data = read.csv(glue::glue("module_{module}.csv")) 
+  data = read.csv(glue::glue("{module}_module.csv")) 
   
   data %>%
     dplyr::select(x) %>%
@@ -42,13 +55,13 @@ lapply(modules_interest, function(module) {
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis = "")) %T>%
     #purrr::map(~ dplyr::filter(., Adjusted.P.value < 0.05)) %>% 
     #purrr::map(~ dplyr::filter(., stringr::str_detect(Genes, ";"))) %>% 
-    openxlsx::write.xlsx(file = glue::glue("Module_{module}_males_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("Module_{module}_enrichr.xlsx")) %>%
     DMRichR::slimGO(tool = "enrichR",
                     annoDb = "org.Mm.eg.db",
                     plots = FALSE) %T>%
-    openxlsx::write.xlsx(file = glue::glue("Module_{module}_males_rrvgo_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("Module_{module}_rrvgo_enrichr.xlsx")) %>%
     DMRichR::GOplot() %>%
-    ggplot2::ggsave(glue::glue("Module_{module}_males_enrichr_plot.pdf"),
+    ggplot2::ggsave(glue::glue("Module_{module}_enrichr_plot.pdf"),
                     plot = .,
                     device = NULL,
                     height = 8.5,
@@ -56,4 +69,18 @@ lapply(modules_interest, function(module) {
   
 })
 
-test2 <- read.csv("module_blue.csv")
+test = read.csv("grey_module.csv")
+test = read.csv("module_darkgreen.csv")
+
+test %>% 
+  dplyr::select(x) %>%
+  purrr::flatten() %>%
+  enrichR::enrichr(c("GO_Biological_Process_2021",
+                     "GO_Cellular_Component_2021",
+                     "GO_Molecular_Function_2021",
+                     "KEGG_2019_Mouse",
+                     "Panther_2016",
+                     "Reactome_2016",
+                     "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>% 
+  purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis = ""))
+set_name
