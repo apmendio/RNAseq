@@ -163,16 +163,16 @@ consensusMEs <- list(female = list(data = MEs_female), male = list(data = MEs_ma
 consensusMEs <- orderMEs(consensusMEs)
 
 MEMAs <- list()
-for (t in 1:20){
-  MEMAs[[t]] = metaAnalysis(consensusMEs, mtd.subset(pheno2, colIndex = t), useRankPvalue = FALSE, 
+for (t in 1:30){
+  MEMAs[[t]] = metaAnalysis(consensusMEs, mtd.subset(pheno, colIndex = t), useRankPvalue = FALSE, 
                             corFnc = bicor,
                             corOptions = list(maxPOutliers = 0.1, use = "pairwise.complete.obs"), 
                             getQvalues = TRUE)
 }
 
 zscores <- sapply(MEMAs, function(x) x[["Z.RootDoFWeights"]])
-rownames(zscores) <- colnames(consensusMEs$female$data)
-colnames(zscores) <- colnames(pheno$female$data)
+rownames(zscores) <- colnames(consensusMEs$male$data)
+colnames(zscores) <- colnames(pheno$male$data)
 pvalues <- sapply(MEMAs, function(x) x[["p.RootDoFWeights"]])
 dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[["q.RootDoFWeights"]])

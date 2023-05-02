@@ -19,6 +19,7 @@ setwd("/Users/aron/Desktop/LaSalle Lab/Analysis/Limma/ReverseCounts")
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/primate_wgcna/chr10")
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/oran")
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/clamsrw/rnaseq/de")
+setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/clamsrw/rnaseq/de2")
 # read in the sample sheet
 # header = TRUE: the first row is the "header", i.e. it contains the column names.
 # sep = "\t": the columns/fields are separated with tabs.
@@ -28,6 +29,8 @@ clams_rw_counts <- read.csv("clams-rw_counts.csv")
 sampletable <- read.table("clams-rw_traitsUpdated4.txt", header=T, sep="\t")
 clams_rw_counts <- read.csv("clams-rw_counts.csv")
 
+clams_rw_counts <- read.csv("clams-rw_counts.txt", header=T, sep="\t")
+sampletable <- read.csv("clams-rw_traits.csv")
 
 sampletable <- read.csv("clams_male.traits.csv")
 clams_male_counts <- read.csv("clams_male.counts.csv")
@@ -41,6 +44,7 @@ head(sampletable)
 nrow(sampletable) # if this is not 6, please raise your hand !
 ncol(sampletable) # if this is not 4, also raise your hand !
 
+# run this if counts files are not combined
 # only return file names with a given pattern
 dir(pattern="__counts.txt")
   
@@ -64,6 +68,8 @@ df2 <- subsetData(df)
 rownames(counts) <- counts$Gene_ID
 counts <- counts[-c(1)]
 
+# run here if counts files have been combined in shell
+
 counts <- baboon_counts
 rownames(counts) <- baboon_counts$GeneID
 counts <- counts[-c(1)]
@@ -76,6 +82,10 @@ counts <- clams_male_counts
 rownames(counts) <- clams_rw_counts$EnsemblID
 counts <- counts[-c(1)]
 
+counts <- clams_rw_counts
+rownames(counts) <- clams_rw_counts$EnsemblID
+counts <- counts[-c(1)]
+
 # set the row names
 rownames(counts) <- x[,1]
 # set the column names based on input file names, with pattern removed (if generated skip to line 54)
@@ -84,11 +94,12 @@ dim(counts)
 head(counts)
 
 counts <- luhmes
+
 #Create Differential Gene Expression List Object
 
 counts <- counts[-c(1)]
 
-#here
+#here!!
 d0 <- DGEList(counts)
 
 #Read in Annotation
@@ -101,6 +112,18 @@ tail(anno)
 any(duplicated(anno$Gene.stable.ID))
 
 #Derive experiment metadata from the sample names
+clams_rw_cf <- read.csv("clams-rw_cf.csv")
+clams_rw_cf <- read.csv("clams-cf.csv")
+counts <- clams_rw_cf
+rownames(counts) <- clams_rw_cf$EnsemblID
+counts <- counts[-c(1)]
+sampletable <- read.csv("clams-cf_traits.csv")
+
+sample_names <- colnames(counts)
+metadata <- sampletable
+colnames(metadata) <- c("SampleID", "Genotype", "GenotypeScores", "Entrainment", "Sex", "SexScore", "Timepoint")
+metadata
+
 sample_names <- colnames(counts)
 metadata <- read.table("sample_sheet2.txt", header=T, sep="\t")
 colnames(metadata) <- c("SampleName", "FileName", "Timepoint", "Sex", "Genotype")
@@ -122,8 +145,15 @@ metadata <- read.table("sample_info.txt", header=T, sep="\t")
 colnames(metadata) <- c("SampleID", "Treatment", "Cell")
 metadata
 
+#CF
 #Create new variable grouping combining group of timepoints
-metadata$group <- interaction(metadata$Sex, metadata$Timepoint)
+metadata$group <- interaction(metadata$Genotype, metadata$Entrainment)
+table(metadata$group)
+table(metadata$Genotype)
+table(metadata$Entrainment)
+
+#Create new variable grouping combining group of timepoints
+metadata$group <- interaction(metadata$Genotype, metadata$Entrainment)
 table(metadata$group)
 table(metadata$Sex)
 table(metadata$Timepoint)
@@ -153,7 +183,7 @@ dim(counts) # number of genes before cleanup
 dim(d) # number of genes left
 
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
-plotMDS(d, col = as.numeric(metadata$Timepoint), cex=1)
+plotMDS(d, col = as.numeric(metadata$Genotype), cex=1)
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
@@ -203,12 +233,13 @@ write.csv(input_mat, file = "input_wgcna.csv", append = TRUE, quote = FALSE, sep
 #Voom transformation and calculation of variance weights
 group <- metadata$group
 treatment <- metadata$Genotype
-treatment2 <- metadata$Entrainment
+treatment <- metadata$Entrainment
 mm <- model.matrix(~0 + group)
 head(mm)
 mm2 <- model.matrix(~0 + group + treatment2)
 head(mm2)
 #Voom
+d <- 
 y <- voom(d, mm, plot = T)
 y2 <- voom(d, mm2, plot = T)
 #Fitting linear models in Limma

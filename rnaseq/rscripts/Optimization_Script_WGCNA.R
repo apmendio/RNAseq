@@ -485,8 +485,8 @@ for (t in 1:26){
                             getQvalues = TRUE)
 }
 
-for (t in 1:20){
-  MEMAs[[t]] = metaAnalysis(consensusMEs, mtd.subset(pheno2, colIndex = t), useRankPvalue = FALSE, 
+for (t in 1:30){
+  MEMAs[[t]] = metaAnalysis(MEs, mtd.subset(pheno2, colIndex = t), useRankPvalue = FALSE, 
                             corFnc = cor,
                             corOptions = list(use = "p"), 
                             getQvalues = TRUE,

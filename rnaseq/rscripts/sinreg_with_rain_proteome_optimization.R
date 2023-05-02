@@ -112,7 +112,7 @@ colnames(exp_maledata.1) = exp_maledata$ProteinID
 exp_maledata.2 = merge(traits, exp_maledata.1, by="row.names")
 
 exp_maledata.2 = exp_maledata.2[
-  with(exp_maledata.2, order(exp_maledata.2$Timepoint)),
+  with(exp_maledata.2, order(exp_maledata.2$timepoint)),
 ]
 
 hubSymbols = AnnotationDbi::mapIds(org.Mm.eg.db,
@@ -172,7 +172,7 @@ colnames(R2) = "R2"
 
 textMatrix = paste(ifelse((signif(FDRs, 1))<0.05, "*", ""), sep="")
 
-tiff("Heatmap_WTfm_clams.tiff", res=400, height=7, width=2.5, units="in")
+tiff("Heatmap_phospho.tiff", res=400, height=7, width=2.5, units="in")
 map1 = labeledHeatmap(Matrix = pVal,
                       xLabels = colnames(pVal),
                       yLabels = gsub("ME", "", rownames(pVal)),

@@ -83,7 +83,7 @@ colnames(female_module.dist) <- c("Module", "Genes")
 
 # Plot Merged Gene Dendrogram with Modules make sure to rename files #
 
-pdf("males_dendogram.pdf", width = 10, height = 5)
+pdf("phospho_dendrogram.pdf", width = 10, height = 5)
 sizeGrWindow(10, 5)
 plotDendroAndColors(dendro = mMods$dendrograms[[1]], colors = mMods$colors, 
                     groupLabels = "Modules", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, 
@@ -100,7 +100,7 @@ dev.off()
 # Cluster Modules by MALE Eigengenes and Plot Dendrogram
 METree <- (1 - bicor(mMods$MEs, maxPOutliers = 0.1)) %>% as.dist %>% 
   hclust(method = "average")
-pdf("MALE Module Eigengene Dendrogram.pdf", height = 5, width = 10)
+pdf("Phospho Module Eigengene Dendrogram.pdf", height = 5, width = 10)
 sizeGrWindow(height = 5, width = 10)
 par(mar = c(0, 5, 1, 1))
 plot(METree, main = "", xlab = "", sub = "", ylim = c(0, 1), cex = 0.6)
@@ -119,8 +119,8 @@ dev.off()
 rm(METree)
 
 # Compare Eigengene Networks Between FEMALE and MALE
-MEs <- orderMEs(Mods$MEs)
-pdf(file = "Male comparison WGCNA Eigengene Networksnu3.pdf", width = 8, height = 7)
+MEs <- orderMEs(Mods$MEs) 
+pdf(file = "Phohspho WGCNA Eigengene Networksnu.pdf", width = 8, height = 7)
 sizeGrWindow(width = 8, height = 7)
 par(cex = 0.8)
 plotEigengeneNetworks(consensusMEs, setLabels = c("Male Cortex"), 
@@ -140,10 +140,10 @@ moduleMembership <- bicorAndPvalue(exp, MEs, use = "pairwise.complete.obs", alte
 MM_male <- as.data.frame(moduleMembership$bicor)
 colnames(MM_male) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_male), fixed = TRUE)
 MM_male$Probe <- rownames(MM_male)
-MM_male$Module <- Mods$colors
-write.table(MM_male, "Consensus Modules MALES Probe Module Membershipnu4.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+MM_male$Module <- mMods$colors
+write.table(MM_male, "Consensus Modules MALES Phospho Module Membership.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 # Get Module Hub Probes and Genes ####
-hubProbes_male <- sapply(colnames(MM_male)[!colnames(MM_male) %in% c("Probe", "Module")], function(x){
+hubProteins_male <- sapply(colnames(MM_male)[!colnames(MM_male) %in% c("Probe", "Module")], function(x){
   temp <- MM_male[MM_male$Module == x,]
   temp$Probe[temp[, x] == max(temp[, x])] %>% as.character %>% unique %>% sort})
 
@@ -154,18 +154,18 @@ hubGenes_male <- lapply(hubProbes_male, function(x){
         verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
 
 # Combine Covariates ####
-cov_male <- read.csv("MaleTraits.csv")
-cov_male <- cov_male[,c("Mice", "Timepoint", "Light")]
-colnames(cov_male)[colnames(cov_male) == "Mice"] <- "sampleID"
+cov_male <- read.csv("phosphotraits.csv")
+cov_male <- cov_male[,c("mice", "timepoint", "Q571G4",	"Q7JJ13",	"Q8BTV2",	"Q64700",	"Q6PIJ4",	"Q9ER74",	"E9Q784",	"B2RT41",	"Q8K0H5",	"E9QAQ7",	"Q9DBU6",	"Q80WC3",	"Q64127",	"Q91W39",	"E9PYH6",	"Q921K9",	"P70121",	"A0A1I7Q4G8",	"Q52KE7",	"Q5DTW7",	"Q8BJ05",	"Q9DCF9",	"O08785",	"Q61624",	"E9PV24",	"Q9R1C7")]
+colnames(cov_male)[colnames(cov_male) == "mice"] <- "sampleID"
 
 rownames(cov_male) <- cov_male$sampleID
-cov_male <- cov_male[,c("Timepoint", "Light")]
+cov_male <- cov_male[,c("timepoint", "Q571G4",	"Q7JJ13",	"Q8BTV2",	"Q64700",	"Q6PIJ4",	"Q9ER74",	"E9Q784",	"B2RT41",	"Q8K0H5",	"E9QAQ7",	"Q9DBU6",	"Q80WC3",	"Q64127",	"Q91W39",	"E9PYH6",	"Q921K9",	"P70121",	"A0A1I7Q4G8",	"Q52KE7",	"Q5DTW7",	"Q8BJ05",	"Q9DCF9",	"O08785",	"Q61624",	"E9PV24",	"Q9R1C7")]
 cov_male <- as.matrix(cov_male)
-table(rownames(exp$maledata$data) == rownames(cov_male)) # All TRUE
+table(rownames(exp) == rownames(cov_male)) # All TRUE
 pheno <- list(male = list(data = cov_male))
 
 # Get Meta-Analysis Correlations ####
-moduleMembership <- read.delim("Consensus Modules MALES Probe Module Membershipnu4.txt", sep = "\t",
+moduleMembership <- read.delim("Consensus Modules MALES Phospho Module Membership.txt", sep = "\t",
                                header = TRUE, stringsAsFactors = FALSE)
 Mods2 <- moduleMembership$Module
 MEs_male <- moduleEigengenes(t(exp_maledata[,-c(1)]), colors = Mods2)$eigengenes
@@ -174,16 +174,16 @@ consensusMEs <- list(male = list(data = MEs_male))
 consensusMEs <- orderMEs(consensusMEs)
 
 MEMAs <- list()
-for (t in 1:20){
-  MEMAs[[t]] = standardScreeningNumericTrait(MEs_male, subset(pheno$male$data, colIndex = t), 
+for (t in 1:50){
+  MEMAs[[t]] = standardScreeningNumericTrait(consensusMEs$male$data, subset(pheno$male$data, colIndex = t), 
                                              corFnc = bicor,
                                              corOptions = list(maxPOutliers = 0.1, use = "pairwise.complete.obs"), 
                                              qValues = TRUE,)
 }
 
 zscores <- sapply(MEMAs, function(x) x[["Z.RootDoFWeights"]])
-rownames(zscores) <- colnames(consensusMEs$female$data)
-colnames(zscores) <- colnames(pheno$female$data)
+rownames(zscores) <- colnames(consensusMEs$male$data)
+colnames(zscores) <- colnames(pheno$male$data)
 pvalues <- sapply(MEMAs, function(x) x[["p.RootDoFWeights"]])
 dimnames(pvalues) <- dimnames(zscores)
 qvalues <- sapply(MEMAs, function(x) x[["q.RootDoFWeights"]])

@@ -14,10 +14,18 @@ exp_maledata <- read.csv("mcountsnu2.csv")
 exp_femdata <- t(exp_femdata)
 exp_maledata <- t(exp_maledata)
 
-exp_femdata <- read.csv("fcountsnu2.csv")
-exp_maledata <- read.csv("mcountsnu2.csv")
-exp_femdata <- t(exp_femdata)
-exp_maledata <- t(exp_maledata)
+exp_femdata <- read.csv("glcnac.csv")
+rownames(exp_femdata) <- exp_femdata$ProteinID
+exp_femdata <- exp_femdata[,-c(1)]
+exp_maledata <- read.csv("phospho.csv")
+rownames(exp_maledata) <- exp_maledata$ProteinID
+exp_maledata <- exp_maledata[,-c(1)]
+
+#normalize data
+logcpm_femdata <- cpm(exp_femdata, prior.count=2, log=TRUE)
+logcpm_maledata <- cpm(exp_maledata, prior.count=2, log=TRUE)
+exp_femdata <- t(logcpm_femdata)
+exp_maledata <- t(logcpm_maledata)
 # Transpose normalized counts here and convert to data frame #
 
 femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)])))
@@ -47,7 +55,7 @@ text(sft$fitIndices[, 1],
      -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
      labels = powers, cex = cex1, col = "red"
 )
-abline(h = 0.90, col = "red")
+abline(h = 0.80, col = "red")
 plot(sft$fitIndices[, 1],
      sft$fitIndices[, 5],
      xlab = "Soft Threshold (power)",
@@ -60,10 +68,10 @@ text(sft$fitIndices[, 1],
      labels = powers,
      cex = cex1, col = "red")
 
-picked_power = 9
+picked_power = 5
 temp_cor <- cor       
 cor <- WGCNA::cor         # Force it to use WGCNA cor function (fix a namespace conflict issue)
-netwk <- blockwiseModules(input_mat,                # <= input here
+netwk <- blockwiseModules(exp_maledata,                # <= input here
                           
                           # == Adjacency Function ==
                           power = picked_power,                # <= power here
