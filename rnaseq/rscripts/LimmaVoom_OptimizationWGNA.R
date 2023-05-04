@@ -184,6 +184,7 @@ dim(d) # number of genes left
 
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 plotMDS(d, col = as.numeric(metadata$Genotype), cex=1)
+plotMDS(d, col = as.numeric(metadata$Entrainment), cex=1)
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
@@ -202,6 +203,7 @@ plotMDS(d, col = as.numeric(metadata$Sex), cex=1)
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #Extracting "normalized" expression table
 logcpm <- cpm(d, prior.count=2, log=TRUE)
+write.table(logcpm,"clams-cf_normalized.txt",sep="\t",quote=F)
 write.table(logcpm,"clams-rw_normalized.txt",sep="\t",quote=F)
 write.table(logcpm,"counts_normalizednu.txt",sep="\t",quote=F)
 write.table(logcpm,"luhmes_counts.txt",sep="\t",quote=F)
@@ -239,20 +241,29 @@ head(mm)
 mm2 <- model.matrix(~0 + group + treatment2)
 head(mm2)
 #Voom
-d <- 
 y <- voom(d, mm, plot = T)
 y2 <- voom(d, mm2, plot = T)
-#Fitting linear models in Limma
-fit <- lmFit(y, mm)
-efit <- eBayes(fit)
-plotSA(efit, main = "Test")
-head(coef(fit))
 
-
+#contrat matrix
 contr.matrix <- makeContrasts(
   WT12vDel12 = groupwt.wt.12 - grouphet.wt.12,
   WT12vTg12 = groupwt.wt.12 - groupwt.tg.12,
   WT12vDelTg12 = groupwt.wt.12 - grouphet.tg.12,
+  levels = colnames(mm))
+contr.matrix
+
+#Fitting linear models in Limma
+fit <- lmFit(y, mm)
+fit <- contrasts.fit(fit, contrasts = contr.matrix)
+efit <- eBayes(fit)
+plotSA(efit, main = "Final model: Mean-variance trend")
+head(coef(fit))
+
+
+contr.matrix <- makeContrasts(
+  WT12vDel12 = groupwt/wt.12 - grouphet/wt.12,
+  WT12vTg12 = groupwt/wt.12 - groupwt/tg.12,
+  WT12vDelTg12 = groupwt/wt.12 - grouphet/tg.12,
   levels = colnames(mm))
 contr.matrix
 fit <- lmFit(y, mm)
@@ -261,9 +272,21 @@ efit <- eBayes(vfit)
 plotSA(efit, main = "Test")
 head(coef(fit))
 
-summary(decideTests(fit))
+summary(decideTests(efit))
+de <- decideTests(efit)
+summary(de)
+tfit <- treat(fit, lfc=1)
+dt <- decideTests(tfit)
+summary(dt)
+de.common <- which(de[,1]!=0 & de[,2]!=0)
+length(de.common)
+
+head(anno$Gene.name[de.common], n = 20)
+vennDiagram(de[,1:3], circle.col=c("turquoise", "salmon"))
+write.fit(efit, de, file="results-cf.txt")
 #Specify which groups to compare using contrasts of timepoints
 colnames(coef(fit))
+head(coef(fit))
 contr <- makeContrasts(groupCM.0.0.M - groupCM.1.0.M, levels = colnames(coef(fit)))
 contr
 tmp <- contrasts.fit(fit, contr)
@@ -271,6 +294,49 @@ tmp
 tmp <- eBayes(tmp)
 tmp
 
+#Specify which groups to compare using contrasts of timepoints
+colnames(coef(fit))
+contr <- makeContrasts(groupwt.wt.12 - grouphet.wt.12, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+contr <- makeContrasts(groupwt.wt.11 - grouphet.wt.11, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+contr <- makeContrasts(groupwt.wt.12 - groupwt.tg.12, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+contr <- makeContrasts(groupwt.wt.12 - grouphet.tg.12, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+contr <- makeContrasts(groupwt.wt.11 - groupwt.tg.11, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+contr <- makeContrasts(groupwt.wt.11 - grouphet.tg.11, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
 #Specify which groups to compare using contrasts of timepoints
 contr <- makeContrasts(groupFemale.ZT0 - groupMale.ZT0, levels = colnames(coef(fit)))
 contr
@@ -309,6 +375,7 @@ write.fit(fit2, reults, file="results.txt")
 
 #MultipleTestingAdjustment
 top.table <- topTable(tmp, adjust.method = "BH", sort.by = "P", n = Inf)
+length(which(top.table$P.Value < 0.05))
 length(which(top.table$adj.P.Val < 0.05))
 head(top.table, 50)
 row.names(top.table)
@@ -320,9 +387,12 @@ top.table <- data.frame(top.table,anno[match(top.table$Gene,anno$Gene.stable.ID)
 
 head(top.table)
 
-write.table(top.table, file = "wtwtvhetwt.txt", row.names = F, sep = "\t", quote = F)
+write.table(top.table, file = "CF12wtwtvhetwt.txt", row.names = F, sep = "\t", quote = F)
 
 #Enhanced Volcano
+library(EnhancedVolcano)
+library(ggplot2)
+library(ggrepel)
 EnhancedVolcano(top.table, lab = top.table$Gene, x = 'logFC', y = 'adj.P.Val')
 
 #Heatmap
