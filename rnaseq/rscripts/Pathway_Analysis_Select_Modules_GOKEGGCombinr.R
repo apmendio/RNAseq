@@ -54,8 +54,8 @@ lapply(modules_interestrm, function(module) {
     openxlsx::write.xlsx(file = glue::glue("Module_{module}_RM12_enrichr.xlsx")) 
 })
 
-modules_1 <- modules_interest
-test_modules_rw3 <- lapply(modules_interest, function(module) {
+###generate GO Term list###
+test_modules_cf <- lapply(modules_interestcf, function(module) {
   data = read.csv(glue::glue("{module}_moduleRM12.csv")) 
 
   data %>%
@@ -76,92 +76,57 @@ test_modules_rw3 <- lapply(modules_interest, function(module) {
     #openxlsx::write.xlsx(file = glue::glue("Module_{module}_RM12_enrichr.xlsx")) 
 })
 
-test_rw_test <- lapply(modules_interest, function(module) {
-  glue('RW_{module}_KG') <- glue('test_modules_rw${module}$KEGG_2019_Mouse')
-})
-glue('RW_{modules_interest}_KG') <- glue('test_modules_rw${modules_interest}$KEGG_2019_Mouse')
+###names list items by module
+names(test_modules_cf) <- modules_interestcf
 
-test_rw_test <- lapply(modules_interest, function(module) {
-  assign(paste0("RW_",module, "_KG"), paste0("test_modules_rw$",module, "$KEGG_2019_Mouse"))
-})
-
-names(test_modules_rw3) <- modules_interest
-test_modules_rw$grey$KEGG_2019_Mouse
-test_kg <- lapply(modules_interest, function(module) {
-  data = glue::glue("test_modules_rw${module}$KEGG_2019_Mouse")
-  data <- data
-})
-
-for(i in hubProbes_male) {
-  y = exp_maledata.2[,i]
-  sinreg_hub = sinreg(exp_maledata.2$Timepoint, y, plot=FALSE)
-  
-  y1 = exp_maledata.2[,i]
-  y2 = sinreg_hub[[2]]
-  
-  ggplot(data=exp_maledata.2, aes(x=Timepoint, y=y1)) +
-    geom_point() +
-    geom_line(data=plotpoints, aes(x=Timepoint, y=y2, color="red")) +
-    scale_x_continuous(breaks=c(0, 3, 6, 9, 12, 15, 18, 21)) +
-    ggtitle(paste(names(hubProbes_male[which(hubProbes_male==i)]), "module hub gene: ", hubSymbols[which(hubProbes_male == i)])) +
-    ylab("Expression") +
-    xlab("Zeitgeber Time (ZT)") +
-    theme_classic() +
-    theme(legend.position="none")
-  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubProbes_male == i)], "_ME", names(hubProbes_male[which(hubProbes_male==i)]), "_males.pdf", sep=""))
-  
-}
-
-for(i in modules_interest) {
-  trial1 <- i
-  print(trial1)
-}
-x = paste0("trial1_", 10)
-trial1 <- for(i in modules_interest) {
-  x <- test_modules_rw3[[i]]$KEGG_2019_Mouse 
-}
-
-trial1 <- lapply(modules_interest, function(module) {
-  for(i in modules_interest) {
-    x = glue::glue("trial1_{module}") 
-    x <- test_modules_rw3[[i]]$KEGG_2019_Mouse 
-  }})
 ##extract KEGG##
 trial1 <- lapply(modules_interest, function(module) {
   test_modules_rw3[[module]]$KEGG_2019_Mouse  
   })
 names(trial1) <- modules_interest
+
 ##bind KEGG##
+##did not work##
 lapply(modules_interest, function(module) {
   trial1[[module]]$Sample <- glue::glue("{module}_RW")  
 })
 
+
+###create sample column and name by module color###
+##for loop worked!###
 for(i in modules_interest) {
   trial1[[i]]$Sample <- paste0("RW_", i)  
 }
+
+###Binds all list items###
 test10 <- rbindlist(trial1)
 test10 <- filter(test10, Adjusted.P.value <= 0.05)
 
-#################################################################
-## Function to calculate module eigengenes and write CSV files ##
-#################################################################
-calculateMEsAndWriteCSV <- function(moduleMembership, expData, outputFileName) {
-  Mods <- moduleMembership$Module
-  MEs <- moduleEigengenes(t(expData[,-c(1)]), colors = Mods)$eigengenes
-  rownames(MEs) <- rownames(t(expData[,-c(1)]))
-  MM <- moduleMembership
-  write.csv(MEs, outputFileName)
-  list(MEs = MEs, MM = MM)
+##extract KEGG##
+trial2 <- lapply(modules_interestrm, function(module) {
+  test_modules_rw2[[module]]$KEGG_2019_Mouse  
+})
+names(trial2) <- modules_interestrm
+
+##bind KEGG##
+###creates sample column and name by module color###
+##for loop worked!###
+for(i in modules_interestrm) {
+  trial2[[i]]$Sample <- paste0("RW_", i)  
 }
 
-##################################################################
-## Calculate and write module eigengenes for different datasets ##
-##################################################################
-MEs_wt <- calculateMEsAndWriteCSV(MM_wt, exp_wtdata, "MEs3_wt.csv")
-MEs_rw <- calculateMEsAndWriteCSV(MM_rw, exp_rmdata, "MEs_rw.csv")
-MEs_cf <- calculateMEsAndWriteCSV(MM_cf, exp_cfdata, "MEs_cf.csv")
-MEs_cm <- calculateMEsAndWriteCSV(MM_cm, exp_cmdata, "MEs_cm.csv")
+###Binds all list items###
+test11 <- rbindlist(trial2)
+test11 <- filter(test11, Adjusted.P.value <= 0.05)
 
+ggplot(test11, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
+  geom_point() +
+  scale_color_gradient(low = "red", high = "blue") +
+  theme_bw() +
+  ylab("") +
+  xlab("Modules") +
+  ggtitle("Significant KEGG Terms")
+###sep###
 names(test_kg) <- modules_interest
 names(test_kg)
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/clamsrw/rnaseq/separate_normalization/GOTermsUpdatedCorrected")
