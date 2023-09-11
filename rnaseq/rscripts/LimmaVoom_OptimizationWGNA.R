@@ -25,9 +25,13 @@ setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/clamsrw/rnaseq/de2")
 # sep = "\t": the columns/fields are separated with tabs.
 sampletable <- read.table("sample_sheet2.txt", header=T, sep="\t")
 baboon_counts <-read.csv("baboon_counts.csv")
+baboon_counts <-read.csv("baboon_merge.csv")
 clams_rw_counts <- read.csv("clams-rw_counts.csv")
 sampletable <- read.table("clams-rw_traitsUpdated4.txt", header=T, sep="\t")
 clams_rw_counts <- read.csv("clams-rw_counts.csv")
+clams_cf_counts <- read.csv("clams-cf_counts.csv")
+clams_cm_counts <- read.csv("clams-cm_counts.csv")
+rw_rm_counts <- read.csv("rw-rm_counts.csv")
 
 clams_rw_counts <- read.csv("clams-rw_counts.txt", header=T, sep="\t")
 sampletable <- read.csv("clams-rw_traits.csv")
@@ -86,6 +90,27 @@ counts <- clams_rw_counts
 rownames(counts) <- clams_rw_counts$EnsemblID
 counts <- counts[-c(1)]
 
+countscf <- clams_cf_counts
+rownames(countscf) <- clams_cf_counts$EnsemblID
+countscf <- countscf[-c(1)]
+
+countscm <- clams_cm_counts
+rownames(countscm) <- clams_cm_counts$EnsemblID
+countscm <- countscm[-c(1)]
+
+countsrm <- rw_rm_counts
+rownames(countsrm) <- rw_rm_counts$Gene_ID
+countsrm <- countsrm[-c(1)]
+
+library(tidyverse)
+countsb <- baboon_counts
+test2 <- countsb %>% distinct(Gene_Name, .keep_all = TRUE)
+lengths(baboon_counts)
+lengths(test2)
+rownames(test2) <- test2$Gene_Name
+countscb <- test2
+countscb <- countscb[-c(1)]
+counts <- countscb
 # set the row names
 rownames(counts) <- x[,1]
 # set the column names based on input file names, with pattern removed (if generated skip to line 54)
@@ -102,6 +127,9 @@ counts <- counts[-c(1)]
 #here!!
 d0 <- DGEList(counts)
 
+d0 <- DGEList(countscf)
+d1 <- DGEList(countscm)
+d0 <- DGEList(countsrm)
 #Read in Annotation
 
 anno <- read.delim("ensembl_mm_100.tsv",as.is=T)
@@ -112,6 +140,13 @@ tail(anno)
 any(duplicated(anno$Gene.stable.ID))
 
 #Derive experiment metadata from the sample names
+clams_rw <- read.csv("clams-rw_counts.csv")
+counts <- clams_rw
+rownames(counts) <- clams_rw$EnsemblID
+counts <- counts[-c(1)]
+sampletable <- read.csv("clams-rw_traits2.csv")
+
+#Derive experiment metadata from the sample names
 clams_rw_cf <- read.csv("clams-rw_cf.csv")
 clams_rw_cf <- read.csv("clams-cf.csv")
 counts <- clams_rw_cf
@@ -119,31 +154,49 @@ rownames(counts) <- clams_rw_cf$EnsemblID
 counts <- counts[-c(1)]
 sampletable <- read.csv("clams-cf_traits.csv")
 
+#Derive experiment metadata from the sample names
+clams_rw_cm <- read.csv("clams-cm.csv")
+counts <- clams_rw_cm
+rownames(counts) <- clams_rw_cm$EnsemblID
+counts <- counts[-c(1)]
+sampletable <- read.csv("clams-cm_traits.csv")
+
+#Derive experiment metadata from the sample names
+clams_rw_rm <- read.csv("rw-rm.csv")
+counts <- clams_rw_rm
+rownames(counts) <- clams_rw_rm$EnsemblID
+counts <- counts[-c(1)]
+sampletable <- read.csv("rw-rm_traits.csv")
+
+#here!!
+d0 <- DGEList(countscf)
+d0 <- DGEList(countsrm)
+d1 <- DGEList(countscm)
 sample_names <- colnames(counts)
 metadata <- sampletable
 colnames(metadata) <- c("SampleID", "Genotype", "GenotypeScores", "Entrainment", "Sex", "SexScore", "Timepoint")
 metadata
 
-sample_names <- colnames(counts)
-metadata <- read.table("sample_sheet2.txt", header=T, sep="\t")
-colnames(metadata) <- c("SampleName", "FileName", "Timepoint", "Sex", "Genotype")
-metadata
+#sample_names <- colnames(counts)
+#metadata <- read.table("sample_sheet2.txt", header=T, sep="\t")
+#colnames(metadata) <- c("SampleName", "FileName", "Timepoint", "Sex", "Genotype")
+#metadata
 
 
-sample_names <- colnames(counts)
-metadata <- read.table("clams-rw_traitsUpdated4.txt", header=T, sep="\t")
-colnames(metadata) <- c("SampleID", "Experiment", "Entrainment", "Sex", "Genotype")
-metadata
+#sample_names <- colnames(counts)
+#metadata <- read.table("clams-rw_traitsUpdated4.txt", header=T, sep="\t")
+#colnames(metadata) <- c("SampleID", "Experiment", "Entrainment", "Sex", "Genotype")
+#metadata
 
-sample_names <- colnames(counts)
-metadata <- sampletable
-metadata
+#sample_names <- colnames(counts)
+#metadata <- sampletable
+#metadata
 
 #Derive experiment metadata from the sample names
-sample_names <- colnames(counts)
-metadata <- read.table("sample_info.txt", header=T, sep="\t")
-colnames(metadata) <- c("SampleID", "Treatment", "Cell")
-metadata
+#sample_names <- colnames(counts)
+#metadata <- read.table("sample_info.txt", header=T, sep="\t")
+#colnames(metadata) <- c("SampleID", "Treatment", "Cell")
+#metadata
 
 #CF
 #Create new variable grouping combining group of timepoints
@@ -174,35 +227,52 @@ table(metadata$Entrainment)
 d0 <- calcNormFactors(d0)
 d0$samples
 dim(d0)
+
+d1 <- calcNormFactors(d1)
+d1$samples
+dim(d1)
 #Filtering genes
 
 cutoff <- 2
 drop <- which(apply(cpm(d0), 1, max) < cutoff)
 d <- d0[-drop,]
-dim(counts) # number of genes before cleanup
+dim(countsrm) # number of genes before cleanup
 dim(d) # number of genes left
+
+cutoff <- 2
+drop <- which(apply(cpm(d1), 1, max) < cutoff)
+d2 <- d1[-drop,]
+dim(countscm) # number of genes before cleanup
+dim(d2) # number of genes left
 
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 plotMDS(d, col = as.numeric(metadata$Genotype), cex=1)
+plotMDS(d, col = as.numeric(metadata$GenotypeScores), cex=1)
+plotMDS(d, col = as.numeric(metadata$SexScore), cex=1)
 plotMDS(d, col = as.numeric(metadata$Entrainment), cex=1)
 plotMDS(d, col = as.numeric(metadata$group), cex=1)
 
-plotMDS(d, col = as.numeric(metadata$group), cex=1)
-plotMDS(d, col = as.numeric(metadata$Treatment), cex=1)
-plotMDS(d, col = as.numeric(metadata$group), cex=1)
+#plotMDS(d, col = as.numeric(metadata$group), cex=1)
+#plotMDS(d, col = as.numeric(metadata$Treatment), cex=1)
+#plotMDS(d, col = as.numeric(metadata$group), cex=1)
 
-plotMDS(d, col = as.numeric(metadata$group), cex=1)
-plotMDS(d, col = as.numeric(metadata$Experiment), cex=1)
-plotMDS(d, labels = metadata$GenotypeScores, col = as.numeric(metadata$Genotype), cex=1)
-col.geno <- metadata$Genotype
-levels(col.geno) <- brewer.pal(nlevels(col.geno), "Set1")
-plotMDS(d, labels = metadata$Genotype, col = col.geno, cex=1)
-title(main = "Genotype Groups")
-plotMDS(d, labels = metadata$Genotype, col = as.numeric(metadata$Entrainment), cex=1)
-plotMDS(d, col = as.numeric(metadata$Sex), cex=1)
-plotMDS(d, col = as.numeric(metadata$group), cex=1)
+#plotMDS(d, col = as.numeric(metadata$group), cex=1)
+#plotMDS(d, col = as.numeric(metadata$Experiment), cex=1)
+#plotMDS(d, labels = metadata$GenotypeScores, col = as.numeric(metadata$Genotype), cex=1)
+#col.geno <- metadata$Genotype
+#levels(col.geno) <- brewer.pal(nlevels(col.geno), "Set1")
+#plotMDS(d, labels = metadata$Genotype, col = col.geno, cex=1)
+#title(main = "Genotype Groups")
+#plotMDS(d, labels = metadata$Genotype, col = as.numeric(metadata$Entrainment), cex=1)
+#plotMDS(d, col = as.numeric(metadata$Sex), cex=1)
+#plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #Extracting "normalized" expression table
-logcpm <- cpm(d, prior.count=2, log=TRUE)
+logcpm <- cpm(d0, prior.count=2, log=TRUE)
+write.csv(logcpm,"rw-rm_normalized.csv")
+write.csv(logcpm,"clams-cf_normalized.csv")
+write.csv(logcpm,"clams-cm_normalized.csv")
+write.table(logcpm,"clams-cf_normalized.txt",sep="\t",quote=F)
+write.table(logcpm,"clams-cm_normalized.txt",sep="\t",quote=F)
 write.table(logcpm,"clams-cf_normalized.txt",sep="\t",quote=F)
 write.table(logcpm,"clams-rw_normalized.txt",sep="\t",quote=F)
 write.table(logcpm,"counts_normalizednu.txt",sep="\t",quote=F)
@@ -234,24 +304,58 @@ input_mat <- input_mat[allcol_order[,1],]
 write.csv(input_mat, file = "input_wgcna.csv", append = TRUE, quote = FALSE, sep = "\t")
 #Voom transformation and calculation of variance weights
 group <- metadata$group
-treatment <- metadata$Genotype
-treatment <- metadata$Entrainment
+geno <- metadata$Genotype
+ent <- metadata$Entrainment
+metadata$Genotype <- relevel(factor(metadata$Genotype), ref ="wt.wt")
+mmtest <- model.matrix(~geno*ent)
+mmtest
+#group2 <- metadata$Genotype
+#mouse <- metadata$SampleID
+metadata
 mm <- model.matrix(~0 + group)
+mm <- model.matrix(~geno + ent)
+mm <- model.matrix(~0 + geno*ent)
 head(mm)
-mm2 <- model.matrix(~0 + group + treatment2)
-head(mm2)
+#mm2 <- model.matrix(~0 + group2 + treatment)
+#head(mm2)
+#keep <- filterByExpr(d0, mm)
+#sum(keep) # number of genes retained
+#d <- d0[keep,]
+
+#plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #Voom
 y <- voom(d, mm, plot = T)
-y2 <- voom(d, mm2, plot = T)
+y <- voom(d, mmtest, plot = T)
+#y2 <- voom(d, mm2, plot = T)
 
 #contrat matrix
 contr.matrix <- makeContrasts(
   WT12vDel12 = groupwt.wt.12 - grouphet.wt.12,
   WT12vTg12 = groupwt.wt.12 - groupwt.tg.12,
   WT12vDelTg12 = groupwt.wt.12 - grouphet.tg.12,
+  WT11vDel11 = groupwt.wt.11 - grouphet.wt.11,
+  WT11vTg11 = groupwt.wt.11 - groupwt.tg.11,
+  WT11vDelTg11 = groupwt.wt.11 - grouphet.tg.11,
+  WT12vWT11 = groupwt.wt.12 - groupwt.wt.11,
+  Del12vDel11 =  grouphet.wt.12 - grouphet.wt.11,
+  WtTg12vWtTg11 = groupwt.tg.12 - groupwt.tg.11,
+  DelTg12vDelTg11 = grouphet.tg.12 - grouphet.tg.11,
   levels = colnames(mm))
 contr.matrix
 
+contr.matrix <- makeContrasts(
+  WT12vDel12 = groupwtwt.twelve - grouphetwt.twelve,
+  WT12vTg12 = groupwtwt.twelve - groupwttg.twelve,
+  WT12vDelTg12 = groupwtwt.twelve - grouphettg.twelve,
+  WT11vDel11 = groupwtwt.eleven - grouphetwt.eleven,
+  WT11vTg11 = groupwtwt.eleven - groupwttg.eleven,
+  WT11vDelTg11 = groupwtwt.eleven - grouphettg.eleven,
+  WT12vWT11 = groupwtwt.twelve - groupwtwt.eleven,
+  Del12vDel11 =  grouphetwt.twelve - grouphetwt.eleven,
+  WtTg12vWtTg11 = groupwttg.twelve - groupwttg.eleven,
+  DelTg12vDelTg11 = grouphettg.twelve - grouphettg.eleven,
+  levels = colnames(mm))
+contr.matrix
 #Fitting linear models in Limma
 fit <- lmFit(y, mm)
 fit <- contrasts.fit(fit, contrasts = contr.matrix)
@@ -259,31 +363,52 @@ efit <- eBayes(fit)
 plotSA(efit, main = "Final model: Mean-variance trend")
 head(coef(fit))
 
-
-contr.matrix <- makeContrasts(
-  WT12vDel12 = groupwt/wt.12 - grouphet/wt.12,
-  WT12vTg12 = groupwt/wt.12 - groupwt/tg.12,
-  WT12vDelTg12 = groupwt/wt.12 - grouphet/tg.12,
-  levels = colnames(mm))
-contr.matrix
-fit <- lmFit(y, mm)
-vfit <- contrasts.fit(fit, contrasts = contr.matrix)
-efit <- eBayes(vfit)
-plotSA(efit, main = "Test")
+fit <- lmFit(y, mmtest)
+fit <- contrasts.fit(fit, contrasts = contr.matrix)
+efit <- eBayes(fit)
+plotSA(efit, main = "Final model: Mean-variance trend")
 head(coef(fit))
+#contr.matrix <- makeContrasts(
+#  WT12vDel12 = groupwt/wt.12 - grouphet/wt.12,
+#  WT12vTg12 = groupwt/wt.12 - groupwt/tg.12,
+#  WT12vDelTg12 = groupwt/wt.12 - grouphet/tg.12,
+#  levels = colnames(mm))
+#contr.matrix
+#fit <- lmFit(y, mm)
+#vfit <- contrasts.fit(fit, contrasts = contr.matrix)
+#efit <- eBayes(vfit)
+#plotSA(efit, main = "Test")
+#head(coef(fit))
 
 summary(decideTests(efit))
 de <- decideTests(efit)
 summary(de)
-tfit <- treat(fit, lfc=1)
-dt <- decideTests(tfit)
-summary(dt)
+de.table <- summary(de)
+write.csv(de.table, "RMDeG2.csv")
+#tfit <- treat(fit, lfc=1)
+#dt <- decideTests(tfit)
+#summary(dt)
 de.common <- which(de[,1]!=0 & de[,2]!=0)
 length(de.common)
 
 head(anno$Gene.name[de.common], n = 20)
 vennDiagram(de[,1:3], circle.col=c("turquoise", "salmon"))
 write.fit(efit, de, file="results-cf.txt")
+
+#examining Top and Bottoms DEs
+head(contr.matrix)
+WT12vDel12 <- topTreat(efit, coef=1, n=Inf)
+WT12vTg12 <- topTreat(efit, coef=2, n=Inf)
+WT12vDelTg12 <- topTreat(efit, coef=3, n=Inf)
+head(WT12vDel12)
+WT12vDel12 <- data.frame(WT12vDel12,anno[match(rownames(WT12vDel12),anno$Gene.stable.ID),])
+write.table(WT12vDel12, file = "CFWT12vDel12.txt", row.names = F, sep = "\t", quote = F)
+write.csv(WT12vDel12, "CFWT12vDel12.csv")
+head(WT12vTg12)
+WT12vTg12 <- data.frame(WT12vTg12,anno[match(rownames(WT12vTg12),anno$Gene.stable.ID),])
+write.table(WT12vTg12, file = "CFWT12vTg12.txt", row.names = F, sep = "\t", quote = F)
+write.csv(WT12vTg12, "CFWT12vTg12.csv")
+head(WT12vDelTg12)
 #Specify which groups to compare using contrasts of timepoints
 colnames(coef(fit))
 head(coef(fit))
@@ -299,6 +424,16 @@ colnames(coef(fit))
 contr <- makeContrasts(groupwt.wt.12 - grouphet.wt.12, levels = colnames(coef(fit)))
 contr
 tmp <- contrasts.fit(fit, contr)
+tmp
+tmp <- eBayes(tmp)
+tmp
+
+colnames(coef(fit))
+contr <- makeContrasts(genohet.wt - genowt.wt, levels = colnames(coef(fit)))
+contr <- makeContrasts(WT12vDel12, levels = colnames(coef(fit)))
+contr
+tmp <- contrasts.fit(fit, contr)
+tmp <- fit
 tmp
 tmp <- eBayes(tmp)
 tmp
@@ -327,7 +462,7 @@ tmp
 contr <- makeContrasts(groupwt.wt.11 - groupwt.tg.11, levels = colnames(coef(fit)))
 contr
 tmp <- contrasts.fit(fit, contr)
-tmp
+tmp <- fit
 tmp <- eBayes(tmp)
 tmp
 

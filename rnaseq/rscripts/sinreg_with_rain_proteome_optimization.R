@@ -202,7 +202,7 @@ mrain.ordered = rain_output[
 rownames(mrain.ordered) <- gsub(pattern = "ME", replacement = "", x = rownames(mrain.ordered), fixed = TRUE)
 mrain.ordered$Module = rownames(mrain.ordered)
 
-openxlsx::write.xlsx(mrain.ordered, file="rain_regresion_results_WT_clams.xlsx")
+openxlsx::write.xlsx(mrain.ordered, file="rain_regresion_results_WT12_2.xlsx")
 
 #rain heatmap
 FDRs = as.matrix(mrain.ordered$FDR)
@@ -215,7 +215,7 @@ colnames(pVal) = "pVal"
 
 textMatrix = paste(ifelse((signif(FDRs, 1))<0.05, "*", ""), sep="")
 
-tiff("Heatmap_WTmf.rain.tiff", res=400, height=7, width=2.5, units="in")
+tiff("Heatmap_WTmf12.rain.tiff", res=400, height=7, width=2.5, units="in")
 map1 = labeledHeatmap(Matrix = pVal,
                       xLabels = colnames(pVal),
                       yLabels = gsub("ME", "", rownames(pVal)),
@@ -228,8 +228,7 @@ map1 = labeledHeatmap(Matrix = pVal,
                       cex.text = 1,
                       cex.lab.x = 0.75,
                       cex.lab.y = 0.65,
-                      main=paste("RAIN Rhythmic WT
-Modules"))
+                      main=paste("RAIN Rhythmic WT Modules"))
 dev.off()
 
 #Female samples

@@ -31,14 +31,38 @@ exp_maledata <- t(logcpm_maledata)
 femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)])))
 maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)])))
 
+# clams-rw #
+
+exp_femdata <- read.csv("cf.csv")
+exp_maledata <- read.csv("cm.csv")
+exp_femdata2 <- read.csv("rm.csv")
+exp_maledata2 <- read.csv("wtfm.csv")
+exp2 <- list(femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)]))),
+            maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)]))))
+names(exp2$femdata$data) = exp_femdata$Gene_ID
+rownames(exp2$femdata$data) = names(exp_femdata)[-c(1)]
+names(exp2$maledata$data) = exp_maledata$Gene_ID
+rownames(exp2$maledata$data) = names(exp_maledata)[-c(1)]
+checkSets(exp2)
+exp
+
+exp3 <- list(femdata = list(data = as.data.frame(t(exp_femdata[,-c(1)]))),
+             maledata = list(data = as.data.frame(t(exp_maledata[,-c(1)]))))
+names(exp3$femdata$data) = exp_femdata$Gene_ID
+rownames(exp3$femdata$data) = names(exp_femdata)[-c(1)]
+names(exp3$maledata$data) = exp_maledata$Gene_ID
+rownames(exp3$maledata$data) = names(exp_maledata)[-c(1)]
+checkSets(exp3)
+exp
 # Choose a set of soft-thresholding powers
 powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
 
 # Call the network topology analysis function
 sft = pickSoftThreshold(
-  exp_maledata,             # <= Input data
-  blockSize = 30,
+  multiExpr$wtdata$data,             # <= Input data
+  blockSize = 1000,
   powerVector = powers,
+  corFnc = "bicor", 
   verbose = 5
 )
 
@@ -55,7 +79,7 @@ text(sft$fitIndices[, 1],
      -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
      labels = powers, cex = cex1, col = "red"
 )
-abline(h = 0.80, col = "red")
+abline(h = c(0.80, 0.90), col = "red")
 plot(sft$fitIndices[, 1],
      sft$fitIndices[, 5],
      xlab = "Soft Threshold (power)",
