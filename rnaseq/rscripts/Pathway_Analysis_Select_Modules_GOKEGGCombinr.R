@@ -55,8 +55,8 @@ lapply(modules_interestrm, function(module) {
 })
 
 ###generate GO Term list###
-test_modules_cf <- lapply(modules_interestcf, function(module) {
-  data = read.csv(glue::glue("{module}_moduleRM12.csv")) 
+test_modules_cm <- lapply(modules_interestcm, function(module) {
+  data = read.csv(glue::glue("{module}_moduleCM16.csv")) 
 
   data %>%
     dplyr::select(x) %>%
@@ -77,30 +77,24 @@ test_modules_cf <- lapply(modules_interestcf, function(module) {
 })
 
 ###names list items by module
-names(test_modules_cf) <- modules_interestcf
+names(test_modules_cm) <- modules_interestcm
 
 ##extract KEGG##
-trial1 <- lapply(modules_interest, function(module) {
-  test_modules_rw3[[module]]$KEGG_2019_Mouse  
+Kegg_cm <- lapply(modules_interestcm, function(module) {
+  test_modules_cm[[module]]$KEGG_2019_Mouse  
   })
-names(trial1) <- modules_interest
+names(Kegg_cm) <- modules_interestcm
 
 ##bind KEGG##
-##did not work##
-lapply(modules_interest, function(module) {
-  trial1[[module]]$Sample <- glue::glue("{module}_RW")  
-})
-
-
 ###create sample column and name by module color###
 ##for loop worked!###
-for(i in modules_interest) {
-  trial1[[i]]$Sample <- paste0("RW_", i)  
+for(i in modules_interestcm) {
+  Kegg_cm[[i]]$Sample <- paste0("CM_", i)  
 }
 
 ###Binds all list items###
-test10 <- rbindlist(trial1)
-test10 <- filter(test10, Adjusted.P.value <= 0.05)
+Kegg_cm_bound <- rbindlist(Kegg_cm)
+Kegg_cm_bound <- filter(Kegg_cm_bound, Adjusted.P.value <= 0.05)
 
 ##extract KEGG##
 trial2 <- lapply(modules_interestrm, function(module) {
@@ -119,7 +113,15 @@ for(i in modules_interestrm) {
 test11 <- rbindlist(trial2)
 test11 <- filter(test11, Adjusted.P.value <= 0.05)
 
-ggplot(test11, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
+All_exp <- rbind(test11, Kegg_cf_bound, Kegg_cm_bound)
+DD_exp <- rbind(Kegg_cf_bound, Kegg_cm_bound)
+
+go_analysis <- read.delim(read.csv("grey_moduleCM16.csv"))
+simMatrix <- calculateSimMatrix(test_modules_cf$turquoise$GO_Biological_Process_2023,
+                                orgdb = "org.Mm.eg.db",
+                                ont = "BP",
+                                method = "Rel")
+ggplot(DD_exp, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
   geom_point() +
   scale_color_gradient(low = "red", high = "blue") +
   theme_bw() +
