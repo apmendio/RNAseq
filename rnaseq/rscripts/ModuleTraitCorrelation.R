@@ -127,7 +127,7 @@ row.names(MEs_cf)
 
 c
 # Use this to extract individual correlations/genotype and entrainment group
-ggplot(data = rw_ev_traits, mapping = aes(x = c("PeriodBasal", "PeriodFirst4", "PeriodLast4", "AmplitudeBasal", "AmplitudeFirst4", "AmplitudeLast4"), y = names(MEs_rw), color = factor(Genotype))) +
+ggplot(data = rw_ev_traits, mapping = aes(x = PeriodBasal, y = MEpink, color = factor(Genotype))) +
   ggtitle("RM ME Black vs PeriodBasal Spearman Correlation") +
   geom_point() +
   #scale_color_manual(values = c("red", "green", "yellow", "blue")) +
@@ -146,6 +146,7 @@ ggplot(data = rw_ev_traits, mapping = aes(x = c("PeriodBasal", "PeriodFirst4", "
   stat_ellipse(type = "norm", level = 0.5) +
   #sm_statCorr(color = 'black', corr_method = 'spearman', linetype = 'dashed') +
   sm_corr_theme(borders = FALSE, legends = TRUE)
+
 # Use this to generate corrlation plot
 ggplot(data = rw_ev_traits, mapping = aes(x = PeriodBasal, y = MEpink)) +
   ggtitle("RM ME Pink vs PeriodBasal Spearman Correlation") +
@@ -171,10 +172,12 @@ rw_traits <- c("PeriodBasal", "PeriodFirst4", "PeriodLast4", "AmplitudeBasal", "
 ###CLAMS test list###
 clams_traits <- c("AvgRER",	"AvgLightRER",	"AvgDarkRER",	"AvgHeat",	"AvgLightHeat",	"AvgDarkHeat",	"AvgKcalIntake", "AvgLightKcalIntake",	"AvgDarkKcalIntake")
 ###Set-up data###
-test_list1 <- names(MEs_rw)
-test_list2 <- rw_traits
-data = rw_ev_traits
-p = as.data.frame(moduleTraitPvaluerw)
+test_list1 <- names(MEs_cm)
+test_list2 <- clams_traits
+data = cm_ev_traits
+p = as.data.frame(moduleTraitPvaluecm)
+
+###Creates correlation plots###
 
 for (i in test_list2) {
   for (j in test_list1) {
@@ -193,7 +196,22 @@ if (p[j,i] < 0.05) {
 else {
   print("No significant data")
 }}}
-mapply(plot_cor,test_list2,test_list1)
 
-test_data <- data.frame(moduleTraitPvaluerw)
-test_data[,c("PeriodBasal", "PeriodFirst4", "PeriodLast4", "AmplitudeBasal", "AmplitudeFirst4", "AmplitudeLast4")]
+###Creates ellipses###
+for (i in test_list2) {
+  for (j in test_list1) {
+    
+    x1 = data[,i]
+    y1 = data[,j]
+    
+    if (p[j,i] < 0.05) {
+      ggplot(data, mapping = aes(x = x1, y = y1, color = factor(Genotype))) +
+        ggtitle(paste("CM", j, "vs", i, "Spearman Correlation")) +
+        geom_point() +
+        stat_ellipse(type = "norm", level = 0.5) 
+      ggsave(paste0("CM_", j, "_vs_", i, "ellipse.pdf"))
+    }
+    else {
+      print("No significant data")
+    }}}
+

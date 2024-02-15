@@ -11,11 +11,13 @@ exp_wtdata <- read.csv("wtfm.csv")
 exp_cfdata <- read.csv("cf.csv")
 exp_cmdata <- read.csv("cm.csv")
 exp_rmdata <- read.csv("rm.csv")
+exp_rfdata <- read.csv("rw-rf_normalized.csv")
 
 multiExpr <- list(wtdata = list(data = as.data.frame(t(exp_wtdata[,-c(1)]))),
             cfdata = list(data = as.data.frame(t(exp_cfdata[,-c(1)]))),
             cmdata = list(data = as.data.frame(t(exp_cmdata[,-c(1)]))),
-            rmdata = list(data = as.data.frame(t(exp_rmdata[,-c(1)]))))
+            rmdata = list(data = as.data.frame(t(exp_rmdata[,-c(1)]))),
+            rfdata = list(data = as.data.frame(t(exp_rfdata[,-c(1)]))))
 names(multiExpr$wtdata$data) = exp_wtdata$Gene_ID
 rownames(multiExpr$wtdata$data) = names(exp_wtdata)[-c(1)]
 names(multiExpr$cfdata$data) = exp_cfdata$Gene_ID
@@ -24,7 +26,10 @@ names(multiExpr$cmdata$data) = exp_cmdata$Gene_ID
 rownames(multiExpr$cmdata$data) = names(exp_cmdata)[-c(1)]
 names(multiExpr$rmdata$data) = exp_rmdata$Gene_ID
 rownames(multiExpr$rmdata$data) = names(exp_rmdata)[-c(1)]
+names(multiExpr$rfdata$data) = exp_rfdata$Gene_ID
+rownames(multiExpr$rfdata$data) = names(exp_rfdata)[-c(1)]
 checkSets(multiExpr)
+
 
 wtmods <- blockwiseModules(multiExpr$wtdata$data, checkMissingData = FALSE, maxBlockSize = 14000, corType = "bicor",
                                maxPOutliers = 0.1, power = 12, networkType="signed",
@@ -66,6 +71,16 @@ module.dist <- as.data.frame(table(rwmods$colors) %>% sort(decreasing = TRUE))
 colnames(module.dist) <- c("Module", "Genes")
 write.csv(module.dist,"module.distribution_rm0.9_sft12.csv")
 
+rfmods <- blockwiseModules(multiExpr$rfdata$data, checkMissingData = FALSE, maxBlockSize = 14000, corType = "bicor",
+                           maxPOutliers = 0.1, power = 8, networkType="signed",
+                           checkPower = FALSE, minModuleSize = 100, TOMType = "signed",
+                           networkCalibration = "full quantile", saveConsensusTOMs = TRUE,
+                           deepSplit=4, mergeCutHeight = 0.1, verbose=4); 
+table(rfmods$colors) %>% sort(decreasing = TRUE)
+module.dist <- as.data.frame(table(rfmods$colors) %>% sort(decreasing = TRUE))
+colnames(module.dist) <- c("Module", "Genes")
+write.csv(module.dist,"module.distribution_rf0.9_sft8.csv")
+
 cfmods <- blockwiseModules(multiExpr$cfdata$data, checkMissingData = FALSE, maxBlockSize = 14000, corType = "bicor",
                            maxPOutliers = 0.1, power = 8, networkType="signed",
                            checkPower = FALSE, minModuleSize = 100, TOMType = "signed",
@@ -91,6 +106,7 @@ wtMEs <- orderMEs(wtmods$MEs)
 #clamsrwMEs <- orderMEs(clamsrwmods$MEs)
 #clamsMEs <- orderMEs(clamsmods$MEs)
 rwMEs <- orderMEs(rwmods$MEs)
+rfMEs <- orderMEs(rfmods$MEs)
 cfMEs <- orderMEs(cfmods$MEs)
 cmMEs <- orderMEs(cmmods$MEs)
 
@@ -111,6 +127,10 @@ moduleMembershipwt <- bicorAndPvalue(multiExpr$wtdata$data, wtMEs,
 moduleMembershiprw <- bicorAndPvalue(multiExpr$rmdata$data, rwMEs, 
                                       alternative = "two.sided", use = "pairwise.complete.obs", 
                                       maxPOutliers = 0.1)
+
+moduleMembershiprf <- bicorAndPvalue(multiExpr$rfdata$data, rfMEs, 
+                                     alternative = "two.sided", use = "pairwise.complete.obs", 
+                                     maxPOutliers = 0.1)
 
 moduleMembershipcf <- bicorAndPvalue(multiExpr$cfdata$data, cfMEs, 
                                       alternative = "two.sided", use = "pairwise.complete.obs", 
@@ -138,6 +158,13 @@ MM_rw$Module <- rwmods$colors
 
 write.table(MM_rw, "RW Module Membershipsft12.txt", sep = "\t", quote = FALSE, row.names = FALSE)
 
+MM_rf <- as.data.frame(moduleMembershiprf$bicor)
+colnames(MM_rf) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_rf), fixed = TRUE)
+MM_rf$Probe <- rownames(MM_rf)
+MM_rf$Module <- rfmods$colors
+
+write.table(MM_rf, "RF Module Membershipsft8.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+
 MM_cf <- as.data.frame(moduleMembershipcf$bicor)
 colnames(MM_cf) <- gsub(pattern = "ME", replacement = "", x = colnames(MM_cf), fixed = TRUE)
 MM_cf$Probe <- rownames(MM_cf)
@@ -159,6 +186,10 @@ hubProbes_wt <- sapply(colnames(MM_wt)[!colnames(MM_wt) %in% c("Probe", "Module"
 
 hubProbes_rw <- sapply(colnames(MM_rw)[!colnames(MM_rw) %in% c("Probe", "Module")], function(x){
   temp <- MM_rw[MM_rw$Module == x,]
+  temp$Probe[temp[, x] == max(temp[, x])] %>% as.character %>% unique %>% sort})
+
+hubProbes_rf <- sapply(colnames(MM_rf)[!colnames(MM_rf) %in% c("Probe", "Module")], function(x){
+  temp <- MM_rf[MM_rf$Module == x,]
   temp$Probe[temp[, x] == max(temp[, x])] %>% as.character %>% unique %>% sort})
 
 hubProbes_cf <- sapply(colnames(MM_cf)[!colnames(MM_cf) %in% c("Probe", "Module")], function(x){
@@ -183,6 +214,12 @@ hubGenes_rw <- lapply(hubProbes_rw, function(x){
 hubGenes_rw
 write.csv(hubGenes_rw, "hubGenes_rw12.csv")
 
+hubGenes_rf <- lapply(hubProbes_rf, function(x){
+  getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
+        verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
+hubGenes_rf
+write.csv(hubGenes_rf, "hubGenes_rf8.csv")
+
 hubGenes_cf <- lapply(hubProbes_cf, function(x){
   getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
         verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
@@ -202,6 +239,7 @@ write.csv(hubGenes_cm, "hubGenes_cm16.csv")
 cov_wt <- read.csv("wtfm_traits.csv")
 cov_rw <- read.csv("rw-rm_traits.csv")
 cov_rw <- read.csv("rw_rm.me.traits.csv")
+cov_rf <- read.csv("rf_traits.csv")
 cov_cf <- read.csv("cf_traits.csv")
 cov_cf <- read.csv("clams_cf.me.traits.csv")
 cov_cm <- read.csv("cm_traits4.csv")
@@ -228,6 +266,13 @@ rownames(cov_rw) <- cov_rw$SampleID
 cov_rw <- cov_rw[,c("Entrainment", "del", "ovexp", "comp", "PeriodBasal", "AmplitudeBasal", "PeriodFirst4", "AmplitudeFirst4", "PeriodLast4", "AmplitudeLast4")]
 cov_rw <- as.matrix(cov_rw)
 table(rownames(multiExpr$rmdata$data) == rownames(cov_rw)) # All TRUE
+library(dplyr)
+rownames(cov_rf) <- cov_rf$ID
+cov_rf <- cov_rf[,c("Entrainment", "del", "ovexp", "comp", "PeriodBasal", "AmplitudeBasal", "PeriodFirst4", "AmplitudeFirst4", "PeriodLast4", "AmplitudeLast4")]
+cov_rf %>% arrange(cov_rf$ID, decreasing = FALSE)
+cov_rf <- as.matrix(cov_rf)
+
+table(rownames(multiExpr$rfdata$data) == rownames(cov_rf)) # All TRUE
 
 rownames(cov_rw) <- cov_rw$SampleID
 cov_rw <- cov_rw[,c("Entrainment", "wt", "del", "ovexp", "comp", "delvwt", "ovexpvwt", "compvwt", "ovexpvdel", "compvdel", "compvovexp", "PeriodBasal", "AmplitudeBasal", "PeriodFirst4", "AmplitudeFirst4", "PeriodLast4", "AmplitudeLast4")]
@@ -288,6 +333,14 @@ rownames(MEs_rw) <- rownames(t(exp_rmdata[,-c(1)]))
 MEs_rw
 MM_rw
 write.csv(MEs_rw, "MEs_rw12.csv")
+
+moduleMembership <- MM_rf
+Mods <- moduleMembership$Module
+MEs_rf <- moduleEigengenes(t(exp_rfdata[,-c(1)]), colors = Mods)$eigengenes
+rownames(MEs_rf) <- rownames(t(exp_rfdata[,-c(1)]))
+MEs_rf
+MM_rf
+write.csv(MEs_rf, "MEs_rf8.csv")
 
 moduleMembership <- MM_cf
 Mods <- moduleMembership$Module
@@ -350,12 +403,12 @@ moduleTraitPvaluecm = corPvalueStudent(moduleTraitCorcm, 31)
 
 sizeGrWindow(width = 22, height = 30)
 
-star <- apply(moduleTraitPvaluecm, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
+star <- apply(moduleTraitPvaluerw, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
 
-textMatrix=paste(signif(moduleTraitCorcm,2), 
+textMatrix=paste(signif(moduleTraitCorrw,2), 
                  star, sep=""); 
 #dim(textMatrix) = dim(moduleTraitCor) 
-par(mar = c(7, 8.5, 1, 0.5))
+par(mar = c(6, 7.5, 1, 0.5))
 #Displaythecorrelationvalueswithinaheatmapplot 
 
 labeledHeatmap(Matrix=moduleTraitCorcm, xLabels=colnames(pheno$cm$data), yLabels=names(MEs$cm$data), 
@@ -370,6 +423,17 @@ labeledHeatmap(Matrix=moduleTraitCorcf, xLabels=colnames(pheno$cf$data), yLabels
                zlim=c(-1,1), main = "CF Module Trait Spearman Correlation", cex.lab.y = 1, plotLegend = TRUE, legendLabel = "spearman correlation")
 dev.off()
 
+labeledHeatmap(Matrix=moduleTraitCorrw, xLabels=colnames(pheno$rw$data), yLabels=names(MEs$rw$data), 
+               ySymbols=gsub("ME", "", names(MEs$rw$data)), colorLabels=FALSE, colors=blueWhiteRed(50), 
+               textMatrix=star, setStdMargins=FALSE, cex.text=0.7, textAdj = c(0.5, 0.8), 
+               zlim=c(-1,1), main = "RW Module Trait Spearman Correlation", cex.lab.y = 1, plotLegend = TRUE, legendLabel = "spearman correlation")
+dev.off()
+
+labeledHeatmap(Matrix=moduleTraitCorwt, xLabels=colnames(pheno$wt$data), yLabels=names(MEs$wt$data), 
+               ySymbols=gsub("ME", "", names(MEs$wt$data)), colorLabels=FALSE, colors=blueWhiteRed(50), 
+               textMatrix=star, setStdMargins=FALSE, cex.text=0.7, textAdj = c(0.5, 0.8), 
+               zlim=c(-1,1), main = "WT Module Trait Spearman Correlation", cex.lab.y = 1, plotLegend = TRUE, legendLabel = "spearman correlation")
+dev.off()
 #Module Preservation Statistics#
 multiExpr$wtdata$data
 colorswtdata = wtmods$colors
@@ -490,9 +554,9 @@ for (wtmod in 1:nwtMods)
                               rwModules[rwmod])
   }
 
-#Truncatepvaluessmallerthan10^{-50}to10^{-50} 
-pTable[is.infinite(pTable)]=1.3*max(pTable[is.finite(pTable)]); 
-pTable[pTable>50]=50; 
+#Truncate pvalues smaller than 10^{-50} to 10^{-50} 
+pTable[is.infinite(pTable)] = 1.3*max(pTable[is.finite(pTable)]); 
+pTable[pTable>50] = 50; 
 #Marginalcounts(reallymodulesizes) 
 wtModTotals=apply(CountTbl,1,sum) 
 rwModTotals=apply(CountTbl,2,sum) 

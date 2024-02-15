@@ -9,7 +9,7 @@ BiocManager::install("DMRichR")
 install.packages("DMRichR")
 library(enrichR)
 library(DMRichR)
-
+library(rrvgo)
 if(!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 if(!requireNamespace("remotes", quietly = TRUE))

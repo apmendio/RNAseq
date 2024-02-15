@@ -6,13 +6,14 @@
 library(dplyr)
 library(ggplot2)
 library(readxl)
+BiocManager::install("rio")
 library(rio)
 library(viridis)
 
 ###############
 ## load data ##
 ###############
-module <- import_list("/Users/osman/Desktop/miscellaneous/Module_green_males_enrichr.xlsx", rbind = TRUE)
+module <- import_list("/Users/aron/Desktop/LaSalle_Lab/Analysis/clamsrw/rnaseq/separate_normalization/GOTermsUpdatedCorrected/CFGOTerms/Module_black_CF8_enrichr.xlsx", rbind = TRUE)
 colnames(module) <- c("Term", "Overlap", "P.value", "Adjusted.P.value", "Old.P.value", "Old.Adjusted.Pl.value", "Odds.Ratio", "Combined.Score", "Genes", "Ontology")
 module <- module %>%
   select(Term, Overlap, Adjusted.P.value, Genes, Odds.Ratio, Ontology) %>%
