@@ -195,7 +195,7 @@ sigRows <- rowSums2(qvalues < 0.05) >= 1
 sigCols <- colSums2(qvalues < 0.05) >= 1
 zscores_sub <- zscores[sigRows, sigCols]
 qvalues_sub <- qvalues[sigRows, sigCols]
-colnames(zscores_sub) <- c("Timepoint", "Light")
+colnames(zscores_sub) <- c("Entrainment", "EntrainmentScore", "AvgDarkRER", "AvgDarkHeat", "AvgHeat", "AvgLightRER", "AvgLightHeat", "AvgDarkHeat.1", "AvgKcalIntake", "AvgLightKcalIntake", "AvgDarkKcalIntake" )
 star <- apply(qvalues_sub, 2, function(x){sapply(x, function(y){ifelse(y < 0.05, "*", "")})})
 pdf("Consensus Modules Meta Covariate Correlation Plot Significant Onlynu.pdf", width = 8, height = 11)
 sizeGrWindow(width = 8, height = 11)

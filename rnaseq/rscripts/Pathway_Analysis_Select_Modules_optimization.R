@@ -40,19 +40,19 @@ modules_interest <- c("greenyellow")
 modules_interest
 getwd()
 
-modules_interest = module.dist$Module
+modules_interest2 = module.dist$Module
 modules_interest <- c("darkgrey")
 #DMRichR is not optimized for 2021GO
 
 lapply(modules_interest, function(module) {
-  data = read.csv(glue::glue("{module}_moduleRW.csv")) 
+  data = read.csv(glue::glue("{module}_universal_modules.csv.csv")) 
   
   data %>%
     dplyr::select(x) %>%
     purrr::flatten() %>%
-    enrichR::enrichr(c("GO_Biological_Process_2018",
-                       "GO_Cellular_Component_2018",
-                       "GO_Molecular_Function_2018",
+    enrichR::enrichr(c("GO_Biological_Process_2023",
+                       "GO_Cellular_Component_2023",
+                       "GO_Molecular_Function_2023",
                        "KEGG_2019_Mouse",
                        "Panther_2016",
                        "Reactome_2016",
@@ -60,13 +60,13 @@ lapply(modules_interest, function(module) {
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis = "")) %T>%
     #purrr::map(~ dplyr::filter(., Adjusted.P.value < 0.05)) %>% 
     #purrr::map(~ dplyr::filter(., stringr::str_detect(Genes, ";"))) %>% 
-    openxlsx::write.xlsx(file = glue::glue("Module_{module}_enrichrRW.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("Module_{module}_enrichrU.xlsx")) %>%
     DMRichR::slimGO(tool = "enrichR",
                     annoDb = "org.Mm.eg.db",
                     plots = FALSE) %T>%
-    openxlsx::write.xlsx(file = glue::glue("Module_{module}_rrvgo_enrichrRW.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("Module_{module}_rrvgo_enrichrU.xlsx")) %>%
     DMRichR::GOplot() %>%
-    ggplot2::ggsave(glue::glue("Module_{module}_enrichr_plotRW.pdf"),
+    ggplot2::ggsave(glue::glue("Module_{module}_enrichr_plotU.pdf"),
                     plot = .,
                     device = NULL,
                     height = 8.5,

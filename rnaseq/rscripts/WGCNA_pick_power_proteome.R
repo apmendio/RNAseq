@@ -59,7 +59,7 @@ powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
 
 # Call the network topology analysis function
 sft = pickSoftThreshold(
-  multiExpr$wtdata$data,             # <= Input data
+  multiExpr$rfdata$data,             # <= Input data
   blockSize = 1000,
   powerVector = powers,
   corFnc = "bicor", 

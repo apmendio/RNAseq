@@ -38,8 +38,8 @@ stopifnot(suppressMessages(sapply(packages, require, character.only = TRUE)))
 
 modules_interest = c("pink", "purple", "red", "salmon", "darkturquoise")
 modules_interest = c("yellow", "pink", "black")
-lapply(modules_interestrm, function(module) {
-  data = read.csv(glue::glue("{module}_moduleRM12.csv")) 
+lapply(modules_interest$Module, function(module) {
+  data = read.csv(glue::glue("{module}_universal_modules.csv")) 
   
   data %>%
     dplyr::select(x) %>%
@@ -48,18 +48,19 @@ lapply(modules_interestrm, function(module) {
                        "GO_Cellular_Component_2023",
                        "GO_Molecular_Function_2023",
                        "KEGG_2019_Mouse",
+                       "dbGaP",
                        "Panther_2016",
                        "Reactome_2022",
                        "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>% 
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis = "")) %T>%
     #purrr::map(~ dplyr::filter(., Adjusted.P.value < 0.05)) %>% 
     #purrr::map(~ dplyr::filter(., stringr::str_detect(Genes, ";"))) %>% 
-    openxlsx::write.xlsx(file = glue::glue("Module_{module}_RM12_enrichr.xlsx")) 
+    openxlsx::write.xlsx(file = glue::glue("Module_{module}_Universal_enrichr.xlsx")) 
 })
 
 ###generate GO Term list###
-test_modules_cm <- lapply(modules_interestcm, function(module) {
-  data = read.csv(glue::glue("{module}_moduleCM16.csv")) 
+test_modules <- lapply(modules_interest$Module, function(module) {
+  data = read.csv(glue::glue("{module}_universal_modules.csv")) 
 
   data %>%
     dplyr::select(x) %>%
@@ -68,6 +69,7 @@ test_modules_cm <- lapply(modules_interestcm, function(module) {
                        "GO_Cellular_Component_2023",
                        "GO_Molecular_Function_2023",
                        "KEGG_2019_Mouse",
+                       "dbGaP",
                        "Panther_2016",
                        "Reactome_2022",
                        "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>% 
@@ -80,24 +82,24 @@ test_modules_cm <- lapply(modules_interestcm, function(module) {
 })
 
 ###names list items by module
-names(test_modules_cm) <- modules_interestcm
+names(test_modules) <- modules_interest$Module
 
 ##extract KEGG##
-Kegg_cm <- lapply(modules_interestcm, function(module) {
-  test_modules_cm[[module]]$KEGG_2019_Mouse  
+Kegg <- lapply(modules_interest$Module, function(module) {
+  test_modules[[module]]$KEGG_2019_Mouse  
   })
-names(Kegg_cm) <- modules_interestcm
+names(Kegg) <- modules_interest$Module
 
 ##bind KEGG##
 ###create sample column and name by module color###
 ##for loop worked!###
-for(i in modules_interestcm) {
-  Kegg_cm[[i]]$Sample <- paste0("CM_", i)  
+for(i in modules_interest$Module) {
+  Kegg[[i]]$Sample <- paste0(i)  
 }
-
+Kegg[["darkslateblue"]]$Sample <- paste0("darkslateblue")  
 ###Binds all list items###
-Kegg_cm_bound <- rbindlist(Kegg_cm)
-Kegg_cm_bound <- filter(Kegg_cm_bound, Adjusted.P.value <= 0.05)
+Kegg_bound <- rbindlist(Kegg, fill = TRUE)
+Kegg_filtered <- filter(Kegg_bound, Adjusted.P.value <= 0.05)
 
 ##extract KEGG##
 trial2 <- lapply(modules_interestrm, function(module) {
@@ -128,12 +130,14 @@ simMatrix <- calculateSimMatrix(test_modules_cf$turquoise$GO_Biological_Process_
 
 #make unique order based on Odds.Ratio
 Kegg_cf_bound.order <- unique(as.character(Kegg_cf_bound$Term)[order(Kegg_cf_bound$Adjusted.P.value, decreasing = TRUE)])
+kegg_rhythmic.order <- unique(as.character(kegg_rhythmic$Term)[order(kegg_rhythmic$Adjusted.P.value, decreasing = TRUE)])
 All_exp.order <- unique(as.character(All_exp$Term)[order(All_exp$Adjusted.P.value, decreasing = TRUE)])
 Male_exps.order <- unique(as.character(Male_exps$Term)[order(Male_exps$Adjusted.P.value, decreasing = TRUE)])
 #reassign journal as factor with new levels
 Kegg_rm_bound2 <- Kegg_rm_bound
 Male_exps2 <- Male_exps
 Kegg_cf_bound2$Term <- factor(Kegg_cf_bound$Term, levels = Kegg_cf_bound.order)
+kegg_rhythmic$Term <- factor(kegg_rhythmic$Term, levels = kegg_rhythmic.order)
 Male_exps2$Term <- factor(Male_exps$Term, levels = Male_exps.order)
 test_matrix <- Kegg_cf_bound2[,c("Term","Adjusted.P.value","Sample")]
 test_matrix <- matrix(test_matrix, ncol = ncol(test_matrix), dimnames = dimnames(test_matrix)) 
@@ -158,6 +162,25 @@ if (x == "TRUE") {
   print("none")
 }
 
+lengths(All_exp)
+lengths(unique(All_exp))
+test <- as.data.frame(duplicated(All_exp$Term))
+rownames(test)
+test$`duplicated(All_exp$Term)`
+test_list <- lapply(test, function(x) {
+  which(x == "TRUE") 
+})
+test_list
+test_new_list <- data.frame(lapply(test_list, function(x) {
+  print(All_exp[x,])
+}))
+lengths(unique(test_new_list))
+names(test_new_list) <- names(All_exp)
+if (x == "TRUE") {
+  print() 
+} else {
+  print("none")
+}
 ### filters non-overlapping terms ###
 test_RW_modules2 <- filter(test_RW_modules, Adjusted.P.value <= 0.05)
 test_data2 <- All_exp2[duplicated(All_exp2$Term)| duplicated(All_exp2$Term, fromLast=TRUE),] 
@@ -171,8 +194,14 @@ test_data2 <- filter(test_data2, Odds.Ratio > 4)
 
 ### clustering dot plots ###
 markers <- test_data2$Term %>% unique()
+markers <- Kegg_filtered$Term %>% unique()
 
 test_data2 %>% filter(Term %in% markers) %>%
+  ggplot(aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
+  geom_point() +
+  scale_color_viridis_c(name = 'log2 (count +1)')
+
+Kegg_filtered %>% filter(Term %in% markers) %>%
   ggplot(aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
   geom_point() +
   scale_color_viridis_c(name = 'log2 (count +1)')
@@ -317,7 +346,34 @@ plot_spacer() + plot_spacer() + ggtree_plot_col +
   plot_layout(ncol = 3, widths = c(0.7, -0.1, 4), heights = c(0.9, 0.1, -0.1, 4, 1))
 ### plot data ### 
 
-ggplot(test_data2, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
+g2 <- ggplot(kegg_nonrhythmic, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
+  geom_point() +
+  scale_color_gradient(low = "red", high = "blue") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.text = element_text(face = "bold", color = "black")) +
+  ylab("") +
+  xlab("Non-Rhythmic Modules") +
+  ggtitle("Significant KEGG Terms")
+g + coord_fixed(ratio = 0.15, expand = TRUE, clip = "on")
+g +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.text = element_text(face = "bold", color = "black")) + scale_y_discrete(guide = guide_axis(n.dodge = 2))
+g + theme(axis.text.y = element_text(margin = margin(0,0,0,0)))
+options(repr.plot.width=10, repr.plot.heigh=50)
+g + theme(axis.text.y = element_text(hjust = 1))
+kegg_filtered2 <- filter(Kegg_filtered, Sample != 'grey')
+kegg_rhythmic <- filter(Kegg_filtered, Sample != c('grey', 'black', 'brown','darkorange', 'darkred', 'darkturquoise', 'green', 'lightcyan', 'magenta', 'purple', 'red', 'skyblue3', 'steelblue', 'turquoise', 'violet', 'yellow'))
+kegg_rhythmic <- subset(Kegg_filtered, Sample == c('black', 'brown','darkorange', 'darkred', 'darkturquoise', 'green', 'lightcyan', 'magenta', 'purple', 'red', 'skyblue3', 'steelblue', 'turquoise', 'violet', 'yellow'))
+kegg_rhythmic <- subset(Kegg_filtered, Sample == c("cyan", "saddlebrown", "royalblue", "skyblue", "lightyellow", "lightgreen"))
+kegg_rhythmic <- Kegg_filtered %>% filter(Sample %in% c("cyan", "saddlebrown", "royalblue", "skyblue", "lightyellow", "lightgreen"))
+kegg_rhythmic <- as.data.frame(kegg_rhythmic[order(kegg_rhythmic$Adjusted.P.value),])
+kegg_rhythmic$Term = factor(kegg_rhythmic$Term, levels=kegg_rhythmic$Term)
+kegg_nonrhythmic <- Kegg_filtered %>% filter(Sample %in% c("black", "brown","darkorange", "darkred", "darkturquoise", "green", "lightcyan", "magenta", "purple", "red", "skyblue3", "steelblue", "turquoise", "violet", "yellow"))
+kegg_rhythmic.order <- unique(as.character(kegg_rhythmic$Term)[order(kegg_rhythmic$Adjusted.P.value, decreasing = TRUE)])
+kegg_nonrhythmic.order <- unique(as.character(kegg_nonrhythmic$Term)[order(kegg_nonrhythmic$Adjusted.P.value, decreasing = TRUE)])
+#reassign journal as factor with new levels
+kegg_rhythmic$Term <- factor(kegg_rhythmic$Term, levels = kegg_rhythmic.order)
+kegg_nonrhythmic$Term <- factor(kegg_nonrhythmic$Term, levels = kegg_nonrhythmic.order)
+### reorder x-axis ###
+g2 <- ggplot(kegg_filtered2, aes(x = factor(Sample, level = c('cyan', 'saddlebrown', 'royalblue', 'skyblue', 'lightyellow', 'lightgreen', 'black', 'brown','darkorange', 'darkred', 'darkturquoise', 'green', 'lightcyan', 'magenta', 'purple', 'red', 'skyblue3', 'steelblue', 'turquoise', 'violet', 'yellow')), y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
   geom_point() +
   scale_color_gradient(low = "red", high = "blue") +
   theme_bw() +
@@ -325,7 +381,6 @@ ggplot(test_data2, aes(x = Sample, y = Term, color = Adjusted.P.value, size = Od
   ylab("") +
   xlab("Modules") +
   ggtitle("Significant KEGG Terms")
-
 ## reorder x-axis using factor function ## 
 ggplot(test_data2, aes(x = factor(Sample, level = c('CM_salmon', 'CM_purple', 'RW_blue', 'RW_cyan', 'RW_magenta', 'CM_royalblue', 'CM_magenta', 'RW_red', 'CM_brown','RW_brown', 'RW_pink', 'RW_purple', 'CM_cyan', 'RW_lightcyan', 'RW_royalblue', 'CM_midnightblue', 'RW_green', 'CM_green', 'RW_yellow', 'CM_lightcyan', 'CM_red', 'RW_darkred', 'CM_yellow', 'RW_black', 'RW_midnightblue', 'RW_tan', 'RW_lightgreen', 'RW_darkgrey')), y = Term, color = Adjusted.P.value, size = Odds.Ratio)) +
   geom_point() +

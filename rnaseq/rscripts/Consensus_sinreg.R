@@ -1,30 +1,49 @@
 #### Using sine regression to assess associations between WGCNA gene modules and time ####
 
 library(WGCNA)
+BiocManager::install("rain")
+BiocManager::install("ShellChron")
 library(rain)
 library(ShellChron)
 library(ggplot2)
+BiocManager::install("openxslx")
 library(openxlsx)
+BiocManager::install("AnnotationDbi")
+BiocManager::install("org.Mm.eg.db")
 library(AnnotationDbi)
 library(org.Mm.eg.db)
 library(RColorBrewer)
 library(data.table)
-
+getwd()
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/individualWGCNA")
 setwd("/Users/aron/Desktop/LaSalle_Lab/Analysis/individualWGCNA/optimization_folder/test")
 
-MEnames = colnames(#MEs_male)
+MEnames = colnames(MEs_cm)
+MEnames = colnames(MEs_wt)
+MEnames = colnames(consensusMEs$wtfdata$data)
+MEnames = colnames(consensusMEs$wtmdata$data)
 no.MEs = length(MEnames)
 
-traits = #mpheno$male$data
+traits = as.data.frame(pheno$wt$data)
+traits = as.data.frame(pheno$cm$data)
+traits = as.data.frame(pheno$wtf$data)
+traits = as.data.frame(pheno$wtm$data)
 
-alldata = merge(traits, #MEs_male, by="row.names")
+#row.names(traits) <- traits$sampleID
+row.names(traits)
+#row.names(MEs_cm)
+row.names(consensusMEs$wtfdata$data)
+alldata = merge(traits, MEs_cm, by="row.names")
+alldata = merge(traits, MEs_wt, by="row.names")
+alldata = merge(traits, consensusMEs$wtfdata$data, by="row.names")
+alldata = merge(traits, consensusMEs$wtmdata$data, by="row.names")
 
 alldata = alldata[
   with(alldata, order(alldata$Timepoint)),
 ]
 
 head(alldata)
+#write.csv(alldata, "cm_eigenvalue.csv")
 
 fitlist = as.list(1:no.MEs)
 names(fitlist) <- MEnames
@@ -88,7 +107,7 @@ for(i in MEnames) {
     xlab("Zeitgeber Time (ZT)") +
     theme_classic() +
     theme(legend.position="none")
-  ggsave(paste("Sine_regression_plot_", i, "_males.pdf"))
+  ggsave(paste("Sine_regression_plots_", i, "_WTM.pdf"))
 }
 
 # order results by best fit (highest R2 value) and save results #
@@ -98,44 +117,84 @@ results.ordered = results[
 
 results.ordered$Module = rownames(results.ordered)
 
-openxlsx::write.xlsx(results.ordered, file="Sine_regresion_results_males.xlsx")
+openxlsx::write.xlsx(results.ordered, file="Sine_regresion_results_WTM.xlsx")
 
 # Checking if hub genes within modules cycle in a similar manner to EigenValues #
 
-exp_maledata.1 = as.data.frame(t(exp_maledata[,-1]))
-colnames(exp_maledata.1) = exp_maledata$Gene_ID
+exp_wtdata.1 = as.data.frame(t(wtf_norm))
+#colnames(exp_wtdata.1) = wtf$Gene_ID
+rownames(exp_wtdata.1)
+rownames(traits)
+exp_wtdata.2 = merge(traits, exp_wtdata.1, by="row.names")
 
-exp_maledata.2 = merge(traits, exp_maledata.1, by="row.names")
-
-exp_maledata.2 = exp_maledata.2[
-  with(exp_maledata.2, order(exp_maledata.2$Timepoint)),
+exp_wtdata.2 = exp_wtdata.2[
+  with(exp_wtdata.2, order(exp_wtdata.2$Timepoint)),
 ]
 
+#geneSymbolswt = AnnotationDbi::mapIds(org.Mm.eg.db,
+                                   keys = exp_wtdata$Gene_ID,
+                                   column = "SYMBOL",
+                                   keytype = 'ENSEMBL') 
+#wt_genes <- exp_wtdata
+#wt_genes$Gene_Name <- geneSymbolswt
+#wt_genes2 <- wt_genes
+#wt_genes2$Gene_Name <- toupper(wt_genes2$Gene_Name)
+#wt_genes2$Gene_Name
+#exp_baboon <- read.csv("baboon_allgenes_counts.csv")
+#test <- match(wt_genes$Gene_Name, exp_baboon$Gene_name)
+#test <- merge(wt_genes2, exp_baboon, by="Gene_Name")
+#write.csv(test, "baboon_merge.csv")
+#test <- WtME[match(rain.order$Module, rownames(WtME)),]
+
 hubSymbols = AnnotationDbi::mapIds(org.Mm.eg.db,
-                                   keys = hubEnsembl_male,
+                                   keys = hubProbes_male,
                                    column = "SYMBOL",
                                    keytype = 'ENSEMBL') 
 
-for(i in hubEnsembl_male) {
-  y = exp_maledata.2[,i]
-  sinreg_hub = sinreg(exp_maledata.2$Timepoint, y, plot=FALSE)
+for(i in hubProbes_female) {
+  y = exp_wtdata.2[,i]
+  sinreg_hub = sinreg(exp_wtdata.2$Timepoint, y, plot=FALSE)
   
-  y1 = exp_maledata.2[,i]
+  y1 = exp_wtdata.2[,i]
   y2 = sinreg_hub[[2]]
   
-  ggplot(data=exp_maledata.2, aes(x=Timepoint, y=y1)) +
+  ggplot(data=exp_wtdata.2, aes(x=Timepoint, y=y1)) +
     geom_point() +
     geom_line(data=plotpoints, aes(x=Timepoint, y=y2, color="red")) +
     scale_x_continuous(breaks=c(0, 3, 6, 9, 12, 15, 18, 21)) +
-    ggtitle(paste(names(hubEnsembl_male[which(hubEnsembl_male==i)]), "module hub gene: ", hubSymbols[which(hubEnsembl_male == i)])) +
+    ggtitle(paste(names(hubProbes_female[which(hubProbes_female==i)]), "module hub gene: ", hubSymbols[which(hubProbes_female == i)])) +
     ylab("Expression") +
     xlab("Zeitgeber Time (ZT)") +
     theme_classic() +
     theme(legend.position="none")
-  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubEnsembl_male == i)], "_ME", names(hubEnsembl_male[which(hubEnsembl_male==i)]), "_males.pdf", sep=""))
+  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubProbes_female == i)], "_ME", names(hubProbes_female[which(hubProbes_female==i)]), "_WTF.pdf", sep=""))
   
 }
 
+hubSymbols = AnnotationDbi::mapIds(org.Mm.eg.db,
+                                   keys = hubProbes_male,
+                                   column = "SYMBOL",
+                                   keytype = 'ENSEMBL') 
+
+for(i in hubProbes_male) {
+  y = exp_wtdata.2[,i]
+  sinreg_hub = sinreg(exp_wtdata.2$Timepoint, y, plot=FALSE)
+  
+  y1 = exp_wtdata.2[,i]
+  y2 = sinreg_hub[[2]]
+  
+  ggplot(data=exp_wtdata.2, aes(x=Timepoint, y=y1)) +
+    geom_point() +
+    geom_line(data=plotpoints, aes(x=Timepoint, y=y2, color="red")) +
+    scale_x_continuous(breaks=c(0, 3, 6, 9, 12, 15, 18, 21)) +
+    ggtitle(paste(names(hubProbes_male[which(hubProbes_male==i)]), "module hub gene: ", hubSymbols[which(hubProbes_male == i)])) +
+    ylab("Expression") +
+    xlab("Zeitgeber Time (ZT)") +
+    theme_classic() +
+    theme(legend.position="none")
+  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubProbes_male == i)], "_ME", names(hubProbes_male[which(hubProbes_male==i)]), "_WTM.pdf", sep=""))
+  
+}
 #### Heatmaps of R2 with FDRs for associations between Modules and Time using sinreg() ####
 
 FDRs = as.matrix(results.ordered$FDR)
@@ -149,7 +208,7 @@ colnames(R2) = "R2"
 
 textMatrix = paste(ifelse((signif(FDRs, 1))<0.05, "*", ""), sep="")
 
-tiff("Heatmap_males.tiff", res=400, height=7, width=2.5, units="in")
+tiff("Heatmap_WTM.tiff", res=400, height=7, width=2.5, units="in")
 map1 = labeledHeatmap(Matrix = pVal,
                       xLabels = colnames(pVal),
                       yLabels = gsub("ME", "", rownames(pVal)),
@@ -162,24 +221,43 @@ map1 = labeledHeatmap(Matrix = pVal,
                       cex.text = 1,
                       cex.lab.x = 0.75,
                       cex.lab.y = 0.65,
-                      main=paste("Circadian Cycling of
-Modules in males"))
+                      main=paste("SinReg Rhythmic WT Modules"))
 dev.off()
 
 
-save(results.ordered, FDRs, pVal, plotpoints, file=glue::glue("sinreg_association_with_gene_modules_males.RData"))
-
+save(results.ordered, FDRs, pVal, plotpoints, file=glue::glue("sinreg_association_with_gene_modules_WTF.RData"))
+rownames(multiExpr$wtdata$data)
+rownames(MEs_wt)
 #rain
-rain_output <- rain(MEs_male, deltat=3, period=24, measure.sequence = c(6, 6, 6, 6, 6, 6, 5, 5), peak.border=c(0.3, 0.7), verbose=FALSE)
+rain_output <- rain(consensusMEs$wtmdata$data, deltat=3, period=24, measure.sequence = c(6, 6, 6, 6, 6, 6, 5, 5), peak.border=c(0.3, 0.7), verbose=FALSE)
+#rain_output <- rain(multiExpr$wtdata$data, deltat=3, period=24, measure.sequence = c(12, 12, 12, 12, 12, 12, 10, 10), peak.border=c(0.3, 0.7), verbose=FALSE)
+
 rain_output$FDR = p.adjust(rain_output$pVal, method="fdr")
 
 mrain.ordered = rain_output[
-  with(rain_output, order(rain_output$FDR, decreasing=FALSE)),
+  with(rain_output, order(rain_output$pVal, decreasing=FALSE)),
 ]
 rownames(mrain.ordered) <- gsub(pattern = "ME", replacement = "", x = rownames(mrain.ordered), fixed = TRUE)
 mrain.ordered$Module = rownames(mrain.ordered)
+mrain.ordered$ensemblid = rownames(mrain.ordered)
 
-openxlsx::write.xlsx(mrain.ordered, file="rain_regresion_results_males2.xlsx")
+ensembl <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
+wt_fm_genes_rain <- lapply(rownames(mrain.ordered), function(x){
+  getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", values = x, mart = ensembl, 
+        verbose = TRUE) %>% unlist %>% as.character %>% unique %>% sort %>% paste(collapse = ", ")}) %>% unlist
+head(wt_fm_genes_rain)
+length(wt_fm_genes_rain)
+Wt_counts <- multiExpr$wtdata$data
+length(Wt_counts)
+Wt_counts <- as.data.frame(t(Wt_counts))
+colnames(Wt_counts)
+rownames(Wt_counts)
+Wt_counts$ensemblid <- rownames(Wt_counts)
+Wt_counts$gene_name <- wt_fm_genes_rain
+
+write.csv(mrain.ordered, "rain_regresion_results_WTM_genes.csv")
+openxlsx::write.xlsx(mrain.ordered, file="rain_regresion_results_WTF_genes.xlsx")
+openxlsx::write.xlsx(Wt_counts, file="Wtfm_genenames_counts.xlsx")
 
 #rain heatmap
 FDRs = as.matrix(mrain.ordered$FDR)
@@ -192,7 +270,7 @@ colnames(pVal) = "pVal"
 
 textMatrix = paste(ifelse((signif(FDRs, 1))<0.05, "*", ""), sep="")
 
-tiff("Heatmap_males.rain.tiff", res=400, height=7, width=2.5, units="in")
+tiff("Heatmap_WTM_Rain.tiff", res=400, height=7, width=2.5, units="in")
 map1 = labeledHeatmap(Matrix = pVal,
                       xLabels = colnames(pVal),
                       yLabels = gsub("ME", "", rownames(pVal)),
@@ -205,25 +283,25 @@ map1 = labeledHeatmap(Matrix = pVal,
                       cex.text = 1,
                       cex.lab.x = 0.75,
                       cex.lab.y = 0.65,
-                      main=paste("RAIN Rhythmic
-Modules in males"))
+                      main=paste("RAIN Rhythmic WTM
+Modules"))
 dev.off()
 
 #Female samples
 
-MEnames = colnames(MEs_female)
+MEnames = colnames(MEs_cm)
 no.MEs = length(MEnames)
 
-traits = fpheno$female$data
+traits = pheno$cm$data
 
-alldata = merge(traits, MEs_female, by="row.names")
+alldata = merge(traits, MEs_cm, by="row.names")
 
 alldata = alldata[
-  with(alldata, order(alldata$Timepoint)),
+  with(alldata, order(alldata$Entrainment)),
 ]
 
 head(alldata)
-
+write.csv(alldata, "cm_ev.traits.csv")
 fitlist = as.list(1:no.MEs)
 names(fitlist) <- MEnames
 
@@ -300,21 +378,24 @@ openxlsx::write.xlsx(results.ordered, file="Sine_regresion_results_females.xlsx"
 
 # Checking if hub genes within modules cycle in a similar manner to EigenValues #
 
-exp_femdata.1 = as.data.frame(t(exp_femdata[,-1]))
-colnames(exp_femdata.1) = exp_femdata$Gene_ID
+exp_femdata.1 = as.data.frame(t(exp_femdata2[,-1]))
+colnames(exp_femdata.1) = exp_femdata2$Gene_ID
 
 exp_femdata.2 = merge(traits, exp_femdata.1, by="row.names")
 
 exp_femdata.2 = exp_femdata.2[
-  with(exp_femdata.2, order(exp_femdata.2$Timepoint)),
-]
+  with(exp_femdata.2, order(exp_femdata.2$GenotypeScores)),
+]  
+#exp_femdata.2 = exp_femdata.2[
+#  with(exp_femdata.2, order(exp_femdata.2$Timepoint)),
+#]
 
 hubSymbols = AnnotationDbi::mapIds(org.Mm.eg.db,
-                                   keys = hubEnsembl_female,
+                                   keys = hubProbes_female,
                                    column = "SYMBOL",
                                    keytype = 'ENSEMBL') 
 
-for(i in hubEnsembl_female) {
+for(i in hubProbes_female) {
   y = exp_femdata.2[,i]
   sinreg_hub = sinreg(exp_femdata.2$Timepoint, y, plot=FALSE)
   
@@ -325,12 +406,12 @@ for(i in hubEnsembl_female) {
     geom_point() +
     geom_line(data=plotpoints, aes(x=Timepoint, y=y2, color="red")) +
     scale_x_continuous(breaks=c(0, 3, 6, 9, 12, 15, 18, 21)) +
-    ggtitle(paste(names(hubEnsembl_female[which(hubEnsembl_female==i)]), "module hub gene: ", hubSymbols[which(hubEnsembl_female == i)])) +
+    ggtitle(paste(names(hubProbes_female[which(hubProbes_female==i)]), "module hub gene: ", hubSymbols[which(hubProbes_female == i)])) +
     ylab("Expression") +
     xlab("Zeitgeber Time (ZT)") +
     theme_classic() +
     theme(legend.position="none")
-  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubEnsembl_female == i)], "_ME", names(hubEnsembl_female[which(hubEnsembl_female==i)]), "_females.pdf", sep=""))
+  ggsave(paste("Sine_regression_plot_", hubSymbols[which(hubProbes_female == i)], "_ME", names(hubProbes_female[which(hubProbes_female==i)]), "_females.pdf", sep=""))
   
 }
 
@@ -356,7 +437,7 @@ map1 = labeledHeatmap(Matrix = pVal,
                       colors = brewer.pal(9, "RdBu"),
                       textMatrix = textMatrix,
                       setStdMargins = FALSE,
-                      invertColors = TRUE,
+                      invertColors = FALSE,
                       cex.text = 1,
                       cex.lab.x = 0.75,
                       cex.lab.y = 0.65,
@@ -408,21 +489,21 @@ Modules in females"))
 dev.off()
 
 #name extractor and gene symbol generator
-male_modulemem <- read.delim("MALES Gene Module Membership.txt", sep = "\t",
+male_modulemem <- read.delim("MALES Probe Module Membership.txt", sep = "\t",
                              header = TRUE, stringsAsFactors = FALSE)
-male_ens.mods <- setDT(male_modulemem[,c(21:22)])
+male_ens.mods <- setDT(male_modulemem[,c(11:12)])
 #test <- DT[order(Module)]
 #test <- DT[Module == "black"]
 
-female_modulemem <- read.delim("FEMALES Gene Module Membership.txt", sep = "\t",
+female_modulemem <- read.delim("FEMALES Probe Module Membership.txt", sep = "\t",
                                header = TRUE, stringsAsFactors = FALSE)
-female_ens.mods <- setDT(female_modulemem[,c(21:22)])
+female_ens.mods <- setDT(female_modulemem[,c(11:12)])
 
 msamples.vector <- mrain.ordered$Module
 modules_interest = msamples.vector
 for (i in modules_interest) {
   
-  gene_id <- colnames(exp$maledata$data)[mMods$colors == i]
+  gene_id <- colnames(exp$maledata$data)[consensusMods$colors == i]
   ensembl <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
   genes <- getBM(attributes = "external_gene_name", filters = "ensembl_gene_id", 
                  values = gene_id, mart = ensembl) %>% unlist %>% as.character %>% unique %>% sort
@@ -449,7 +530,7 @@ write.csv(genes_interest_male, file = paste("module_interest_", modules_interest
 }
 ###EnrichR Pathway Analysis###
 
-modules_interest = samples.vector
+modules_interest = c("green", "grey", "black", "red", "blue", "brown", "yellow", "pink", "magenta", "turquoise")
 lapply(modules_interest, function(module) {
   data = read.csv(glue::glue("{module} _male_geneslist.csv")) 
   

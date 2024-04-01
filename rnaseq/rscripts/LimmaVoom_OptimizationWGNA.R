@@ -13,6 +13,7 @@ library(limma)
 library(Glimma)
 library(edgeR)
 library(Mus.musculus)
+getwd()
 library()
 
 setwd("/Users/aron/Desktop/LaSalle Lab/Analysis/Limma/ReverseCounts")
@@ -32,6 +33,24 @@ clams_rw_counts <- read.csv("clams-rw_counts.csv")
 clams_cf_counts <- read.csv("clams-cf_counts.csv")
 clams_cm_counts <- read.csv("clams-cm_counts.csv")
 rw_rm_counts <- read.csv("rw-rm_counts.csv")
+rw_rf_counts <- read.csv("rw-rf_counts.csv")
+
+###2.20.24
+cf <- read.csv("cf.counts.csv")
+cm <- read.csv("cm.counts.csv")
+rf <- read.csv("rf.counts.csv")
+rm <- read.csv("rm.counts.csv")
+wtf <- read.csv("wtf_non-normalized.csv")
+wtm <- read.csv("wtm_non-normalized.csv")
+
+cfcm <- merge(cf, cm, by = "EnsemblID")
+wtfm <- read.csv("wtfm.csv")
+merge <- merge(rm, exp_femdata2, by = "Gene_ID")
+merge <- merge(cfcm, exp_maledata2, by = "EnsemblID")
+cfcmrm <- read.csv("cfcmrm.csv")
+
+write.csv(merge, "rf_traits.csv")
+####
 
 clams_rw_counts <- read.csv("clams-rw_counts.txt", header=T, sep="\t")
 sampletable <- read.csv("clams-rw_traits.csv")
@@ -102,6 +121,10 @@ countsrm <- rw_rm_counts
 rownames(countsrm) <- rw_rm_counts$Gene_ID
 countsrm <- countsrm[-c(1)]
 
+countsrf <- rw_rf_counts
+rownames(countsrf) <- rw_rf_counts$Gene_ID
+countsrf <- countsrf[-c(1)]
+
 library(tidyverse)
 countsb <- baboon_counts
 test2 <- countsb %>% distinct(Gene_Name, .keep_all = TRUE)
@@ -130,6 +153,7 @@ d0 <- DGEList(counts)
 d0 <- DGEList(countscf)
 d1 <- DGEList(countscm)
 d0 <- DGEList(countsrm)
+d0 <- DGEList(countsrf)
 #Read in Annotation
 
 anno <- read.delim("ensembl_mm_100.tsv",as.is=T)
@@ -171,7 +195,8 @@ sampletable <- read.csv("rw-rm_traits.csv")
 #here!!
 d0 <- DGEList(countscf)
 d0 <- DGEList(countsrm)
-d1 <- DGEList(countscm)
+d0 <- DGEList(countsrf)
+d0 <- DGEList(countscm)
 sample_names <- colnames(counts)
 metadata <- sampletable
 colnames(metadata) <- c("SampleID", "Genotype", "GenotypeScores", "Entrainment", "Sex", "SexScore", "Timepoint")
@@ -236,7 +261,7 @@ dim(d1)
 cutoff <- 2
 drop <- which(apply(cpm(d0), 1, max) < cutoff)
 d <- d0[-drop,]
-dim(countsrm) # number of genes before cleanup
+dim(countsrf) # number of genes before cleanup
 dim(d) # number of genes left
 
 cutoff <- 2
@@ -267,7 +292,8 @@ plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #plotMDS(d, col = as.numeric(metadata$Sex), cex=1)
 #plotMDS(d, col = as.numeric(metadata$group), cex=1)
 #Extracting "normalized" expression table
-logcpm <- cpm(d0, prior.count=2, log=TRUE)
+logcpm <- cpm(d, prior.count=2, log=TRUE)
+write.csv(logcpm,"rw-rf_normalized.csv")
 write.csv(logcpm,"rw-rm_normalized.csv")
 write.csv(logcpm,"clams-cf_normalized.csv")
 write.csv(logcpm,"clams-cm_normalized.csv")
